@@ -6,6 +6,7 @@ import smtplib
 from collections.abc import Callable
 
 from app.core.config import settings
+from app.services.smtp_blocked_detector import record_smtp_timeout
 from app.services.verification.dns_checker import resolve_to_ip
 
 SMTP_TIMEOUT_SECS = getattr(settings, "smtp_timeout_seconds", 5)
@@ -92,11 +93,16 @@ def smtp_probe_rcpt(
         err = f"SMTP error: {type(e).__name__}"
         if detail_callback:
             detail_callback(f"  [SMTP] Exception on {mx_host}: {err}")
+        # Record timeout for SMTP blocked detection
+        record_smtp_timeout(mx_host)
         return False, err, None
     except OSError as e:
         err = f"SMTP error: {type(e).__name__}"
         if detail_callback:
             detail_callback(f"  [SMTP] Exception on {mx_host}: {err}")
+        # Record timeout for connection-related errors (port blocked, network unreachable)
+        if "timed out" in str(e).lower() or "connection refused" in str(e).lower():
+            record_smtp_timeout(mx_host)
         return False, err, None
 
 
