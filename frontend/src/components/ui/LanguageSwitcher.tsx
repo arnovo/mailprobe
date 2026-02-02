@@ -25,18 +25,25 @@ export function LanguageSwitcher() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [currentLocale, setCurrentLocale] = useState(DEFAULT_LOCALE);
+  const [pendingLocale, setPendingLocale] = useState<string | null>(null);
 
   useEffect(() => {
     setCurrentLocale(getLocaleCookie());
   }, []);
 
-  const handleChange = useCallback((locale: string) => {
-    setLocaleCookie(locale);
-    setCurrentLocale(locale);
+  useEffect(() => {
+    if (pendingLocale === null) return;
+    setLocaleCookie(pendingLocale);
+    setCurrentLocale(pendingLocale);
     startTransition(() => {
       router.refresh();
     });
-  }, [router]);
+    setPendingLocale(null);
+  }, [pendingLocale, router]);
+
+  const handleChange = useCallback((locale: string) => {
+    setPendingLocale(locale);
+  }, []);
 
   return (
     <div className="flex items-center gap-1">
