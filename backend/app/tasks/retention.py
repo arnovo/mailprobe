@@ -1,4 +1,5 @@
 """Celery Beat: retention job - anonymize/delete inactive leads."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
@@ -19,6 +20,7 @@ def run_retention():
     db = SessionLocal()
     try:
         from app.models import Lead
+
         months = settings.retention_inactive_months
         cutoff = datetime.now(UTC) - timedelta(days=months * 30)
         r = db.execute(select(Lead).where(Lead.updated_at < cutoff))

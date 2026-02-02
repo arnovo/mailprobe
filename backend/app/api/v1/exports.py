@@ -1,4 +1,5 @@
 """Exports: request CSV export (async), get job_id."""
+
 from __future__ import annotations
 
 import uuid
@@ -23,15 +24,18 @@ async def export_csv(
     workspace, _, _ = workspace_required
     key = idempotency_key or f"export-csv-{uuid.uuid4()}"
     from app.api.deps import check_idempotency, save_idempotency
+
     cached = await check_idempotency(workspace.id, key, db)
     if cached:
         import json
+
         return APIResponse.model_validate(json.loads(cached[1]))
     job_id = str(uuid.uuid4())
     job = Job(workspace_id=workspace.id, job_id=job_id, kind="export_csv", status="queued", progress=0)
     db.add(job)
     await db.commit()
     from app.tasks.exports import run_export_csv
+
     run_export_csv.delay(workspace.id, job_id)
     resp = APIResponse.ok({"job_id": job_id})
     await save_idempotency(db, workspace.id, key, "", 200, resp.model_dump_json())

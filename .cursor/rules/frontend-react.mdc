@@ -1,36 +1,36 @@
 ---
-description: Estándares React/Next.js para el frontend
+description: React/Next.js standards for the frontend
 globs: frontend/**/*.tsx
 alwaysApply: false
 ---
 
-# Frontend React/Next.js - Estándares
+# Frontend React/Next.js - Standards
 
-## Estructura Next.js 14 (App Router)
+## Next.js 14 Structure (App Router)
 
 ```
 src/app/
-  layout.tsx          # Layout raíz
-  page.tsx            # Página principal (/)
+  layout.tsx          # Root layout
+  page.tsx            # Home page (/)
   login/page.tsx      # /login
   dashboard/
-    layout.tsx        # Layout del dashboard
-    page.tsx          # /dashboard (lista de leads)
+    layout.tsx        # Dashboard layout
+    page.tsx          # /dashboard (leads list)
     config/page.tsx   # /dashboard/config
     jobs/page.tsx     # /dashboard/jobs
 ```
 
-## Convenciones de Nombres
+## Naming Conventions
 
-- **Archivos**: kebab-case para carpetas, `page.tsx` para páginas
-- **Componentes**: PascalCase (`LeadRow`, `AlertModal`)
-- **Hooks**: camelCase con prefijo `use` (`useAuth`, `useFetch`)
-- **Variables de estado**: camelCase (`isLoading`, `selectedLead`)
+- **Files**: kebab-case for folders, `page.tsx` for pages
+- **Components**: PascalCase (`LeadRow`, `AlertModal`)
+- **Hooks**: camelCase with `use` prefix (`useAuth`, `useFetch`)
+- **State variables**: camelCase (`isLoading`, `selectedLead`)
 
-## Patrones de Componentes
+## Component Patterns
 
 ```tsx
-// ✅ Componentes funcionales con tipos
+// ✅ Functional components with types
 interface LeadRowProps {
   lead: Lead;
   onEdit: (id: number) => void;
@@ -41,14 +41,14 @@ export function LeadRow({ lead, onEdit }: LeadRowProps) {
 }
 ```
 
-## Estado y Fetching
+## State and Fetching
 
 ```tsx
-// Estado local con useState
+// Local state with useState
 const [leads, setLeads] = useState<Lead[]>([]);
 const [isLoading, setIsLoading] = useState(true);
 
-// Fetch en useEffect
+// Fetch in useEffect
 useEffect(() => {
   async function fetchLeads() {
     const res = await fetch(`${API_URL}/v1/leads`);
@@ -58,13 +58,13 @@ useEffect(() => {
 }, []);
 ```
 
-## Estilos con Tailwind
+## Styles with Tailwind
 
 ```tsx
-// ✅ Clases Tailwind directas
+// ✅ Direct Tailwind classes
 <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
 
-// ✅ Condicionales con template literals
+// ✅ Conditionals with template literals
 <span className={`px-2 py-1 rounded ${
   status === 'valid' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
 }`}>
@@ -75,7 +75,7 @@ useEffect(() => {
 ```tsx
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-// Siempre incluir credentials para auth
+// Always include credentials for auth
 const res = await fetch(`${API_URL}/v1/leads`, {
   credentials: 'include',
   headers: { 'Content-Type': 'application/json' },
@@ -84,7 +84,7 @@ const res = await fetch(`${API_URL}/v1/leads`, {
 
 ## UI/UX
 
-- Mostrar estados de carga (`isLoading`)
-- Feedback visual en acciones (botones deshabilitados, spinners)
-- Mensajes de error claros en español
-- Iconos discretos para alertas (ej: ⚠️ para datos faltantes)
+- Show loading states (`isLoading`)
+- Visual feedback on actions (disabled buttons, spinners)
+- Clear error messages (localized via i18n)
+- Discrete icons for alerts (e.g.: ⚠️ for missing data)

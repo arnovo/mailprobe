@@ -1,4 +1,4 @@
-"""Workspace verification config: GET/PUT por workspace (tabla clave-valor)."""
+"""Workspace verification config: GET/PUT per workspace (key-value table)."""
 
 from __future__ import annotations
 
@@ -10,9 +10,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, get_workspace_required, require_scope
+from app.core.error_codes import ErrorCode
 from app.models import WorkspaceConfigEntry
 from app.schemas.common import APIResponse
 from app.schemas.config import (
+    MAX_CUSTOM_PATTERNS,
+    MAX_PATTERN_LENGTH,
     MAX_TIMEOUT_SECONDS,
     MIN_PATTERNS_ENABLED,
     MIN_TIMEOUT_SECONDS,
@@ -30,7 +33,7 @@ async def get_config(
     db: AsyncSession = Depends(get_db),
     workspace_required: tuple = Depends(get_workspace_required),
 ) -> APIResponse:
-    """Config del workspace (fusionada con globales)."""
+    """Workspace config (merged with globals)."""
     workspace, _, _ = workspace_required
     r = await db.execute(select(WorkspaceConfigEntry).where(WorkspaceConfigEntry.workspace_id == workspace.id))
     entries = list(r.scalars().all())
@@ -43,7 +46,7 @@ async def update_config(
     db: AsyncSession = Depends(get_db),
     workspace_required: tuple = Depends(get_workspace_required),
 ) -> APIResponse:
-    """Actualiza config del workspace. Cada clave se guarda como registro; null/vacío = borrar (usar global)."""
+    """Updates workspace config. Each key is saved as a record; null/empty = delete (use global)."""
     workspace, _, _ = workspace_required
     r = await db.execute(select(WorkspaceConfigEntry).where(WorkspaceConfigEntry.workspace_id == workspace.id))
     entries_by_key = {e.key: e for e in r.scalars().all()}
@@ -74,9 +77,9 @@ async def update_config(
         indices = [i for i in body.enabled_pattern_indices if 0 <= i < PATTERN_COUNT]
         if len(indices) < MIN_PATTERNS_ENABLED:
             return APIResponse.err(
-                "VALIDATION_ERROR",
-                f"Debe haber al menos {MIN_PATTERNS_ENABLED} patrones habilitados.",
-                {"enabled_pattern_indices": indices},
+                ErrorCode.VALIDATION_MIN_PATTERNS.value,
+                f"At least {MIN_PATTERNS_ENABLED} patterns must be enabled.",
+                {"enabled_pattern_indices": indices, "min": str(MIN_PATTERNS_ENABLED)},
             )
         await set_entry("enabled_pattern_indices", sorted(set(indices)))
     if body.smtp_mail_from is not None:
@@ -86,7 +89,9 @@ async def update_config(
         v = body.web_search_provider.strip().lower() if isinstance(body.web_search_provider, str) else ""
         if v and v not in ("bing", "serper"):
             return APIResponse.err(
-                "VALIDATION_ERROR", "web_search_provider debe ser 'bing', 'serper' o vacío.", {"web_search_provider": v}
+                ErrorCode.VALIDATION_INVALID_PROVIDER.value,
+                "Provider must be 'bing', 'serper' or empty.",
+                {"web_search_provider": v},
             )
         await set_entry("web_search_provider", v if v else None)
     if body.web_search_api_key is not None:
@@ -95,14 +100,14 @@ async def update_config(
     if body.allow_no_lastname is not None:
         await set_entry("allow_no_lastname", "true" if body.allow_no_lastname else None)
     if body.custom_patterns is not None:
-        # Validar patrones: deben contener @{domain} y no exceder límite
+        # Validate patterns: must contain @{domain} and not exceed limit
         valid_patterns = []
         for p in body.custom_patterns:
             p = p.strip() if isinstance(p, str) else ""
-            if p and "@{domain}" in p and len(p) <= 100:
+            if p and "@{domain}" in p and len(p) <= MAX_PATTERN_LENGTH:
                 valid_patterns.append(p)
         if valid_patterns:
-            await set_entry("custom_patterns", valid_patterns[:20])
+            await set_entry("custom_patterns", valid_patterns[:MAX_CUSTOM_PATTERNS])
         else:
             await set_entry("custom_patterns", None)  # Borrar si lista vacía
 

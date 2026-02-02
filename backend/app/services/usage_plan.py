@@ -1,4 +1,5 @@
 """Usage and plan limits."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -30,9 +31,7 @@ async def get_current_usage(db: AsyncSession, workspace_id: int) -> tuple[int, i
     """Returns (verifications_count, exports_count) for current month."""
     now = datetime.now(UTC)
     period = now.strftime("%Y-%m")
-    result = await db.execute(
-        select(Usage).where(Usage.workspace_id == workspace_id, Usage.period == period)
-    )
+    result = await db.execute(select(Usage).where(Usage.workspace_id == workspace_id, Usage.period == period))
     row = result.unique().scalars().one_or_none()
     if not row:
         return (0, 0)
@@ -43,9 +42,7 @@ async def increment_verification_usage(db: AsyncSession, workspace_id: int) -> i
     """Increment verification count for current month; return new total."""
     now = datetime.now(UTC)
     period = now.strftime("%Y-%m")
-    result = await db.execute(
-        select(Usage).where(Usage.workspace_id == workspace_id, Usage.period == period)
-    )
+    result = await db.execute(select(Usage).where(Usage.workspace_id == workspace_id, Usage.period == period))
     row = result.unique().scalars().one_or_none()
     if not row:
         row = Usage(workspace_id=workspace_id, period=period, verifications_count=1, exports_count=0)
@@ -60,9 +57,7 @@ async def increment_verification_usage(db: AsyncSession, workspace_id: int) -> i
 async def increment_export_usage(db: AsyncSession, workspace_id: int) -> int:
     now = datetime.now(UTC)
     period = now.strftime("%Y-%m")
-    result = await db.execute(
-        select(Usage).where(Usage.workspace_id == workspace_id, Usage.period == period)
-    )
+    result = await db.execute(select(Usage).where(Usage.workspace_id == workspace_id, Usage.period == period))
     row = result.unique().scalars().one_or_none()
     if not row:
         row = Usage(workspace_id=workspace_id, period=period, verifications_count=0, exports_count=1)

@@ -2,6 +2,10 @@
 
 import { SerperUsage } from '@/hooks/useConfig';
 
+// Thresholds for Serper usage badge colors
+const SERPER_WARNING_THRESHOLD = 2000;
+const SERPER_CRITICAL_THRESHOLD = 2400;
+
 interface WebSearchSettingsProps {
   provider: string;
   apiKey: string;
@@ -9,6 +13,28 @@ interface WebSearchSettingsProps {
   onProviderChange: (v: string) => void;
   onApiKeyChange: (v: string) => void;
   onLoadSerperUsage: () => void;
+}
+
+function SerperUsageBadge({ usage }: { usage: SerperUsage }) {
+  const isCritical = usage.current_month >= SERPER_CRITICAL_THRESHOLD;
+  const isWarning = usage.current_month >= SERPER_WARNING_THRESHOLD;
+  
+  const background = isCritical ? '#7f1d1d' : isWarning ? '#78350f' : '#1e3a5f';
+  const color = isCritical ? '#fca5a5' : isWarning ? '#fcd34d' : '#93c5fd';
+
+  return (
+    <span
+      style={{
+        fontSize: '0.75rem',
+        padding: '0.25rem 0.5rem',
+        borderRadius: 4,
+        background,
+        color,
+      }}
+    >
+      Uso: {usage.current_month.toLocaleString()} / 2,500 ({usage.month_key})
+    </span>
+  );
 }
 
 export function WebSearchSettings({
@@ -56,17 +82,7 @@ export function WebSearchSettings({
               API Key ({provider === 'serper' ? 'Serper.dev' : 'Bing'})
             </label>
             {provider === 'serper' && serperUsage && (
-              <span
-                style={{
-                  fontSize: '0.75rem',
-                  padding: '0.25rem 0.5rem',
-                  borderRadius: 4,
-                  background: serperUsage.current_month >= 2400 ? '#7f1d1d' : serperUsage.current_month >= 2000 ? '#78350f' : '#1e3a5f',
-                  color: serperUsage.current_month >= 2400 ? '#fca5a5' : serperUsage.current_month >= 2000 ? '#fcd34d' : '#93c5fd',
-                }}
-              >
-                Uso: {serperUsage.current_month.toLocaleString()} / 2,500 ({serperUsage.month_key})
-              </span>
+              <SerperUsageBadge usage={serperUsage} />
             )}
           </div>
           <input

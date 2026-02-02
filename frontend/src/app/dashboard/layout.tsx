@@ -1,12 +1,14 @@
 'use client';
 
 /**
- * Layout del dashboard: navegación común y selector de workspace.
- * Solo se muestra tras comprobar auth en el cliente (evita hydration mismatch).
- * Usa fetchWithAuth: en 401 intenta refresh; si falla, redirige a /login.
+ * Dashboard layout: common navigation and workspace selector.
+ * Only shown after verifying auth on client (avoids hydration mismatch).
+ * Uses fetchWithAuth: on 401 tries refresh; if fails, redirects to /login.
  */
 
+import { LanguageSwitcher } from '@/components/ui';
 import { fetchWithAuth, getAccessToken } from '@/lib/auth';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -19,7 +21,9 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
-  // Montado en cliente: true solo después del primer useEffect (evita leer localStorage en SSR)
+  const t = useTranslations('nav');
+  const tCommon = useTranslations('common');
+  // Mounted on client: true only after first useEffect (avoid reading localStorage in SSR)
   const [mounted, setMounted] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [workspaceId, setWorkspaceId] = useState('1');
@@ -63,11 +67,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     localStorage.setItem('workspace_id', v);
   };
 
-  // Mismo HTML en servidor y cliente hasta que mounted: evita error de hydration
+  // Same HTML on server and client until mounted: avoids hydration error
   if (!mounted) {
     return (
       <div className="container">
-        <p>Cargando...</p>
+        <p>{tCommon('loading')}</p>
       </div>
     );
   }
@@ -77,7 +81,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     <Link
       href={href}
       className={pathname === href ? 'nav-active' : ''}
-      style={{ padding: '0.5rem', fontWeight: pathname === href ? 600 : undefined }}
+      style={{ padding: '0.5rem', fontWeight: pathname === href ? 'bold' : undefined }}
     >
       {label}
     </Link>
@@ -87,34 +91,37 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     <div className="container">
       <h1 style={{ marginBottom: '0.5rem' }}>Mailprobe</h1>
       <nav style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid #334155' }}>
-        {navLink('/dashboard', 'Leads')}
-        {navLink('/dashboard/jobs', 'Jobs')}
-        {navLink('/dashboard/config', 'Configuración')}
-        {navLink('/dashboard/api-keys', 'API Keys')}
-        {navLink('/dashboard/webhooks', 'Webhooks')}
-        {navLink('/dashboard/exports', 'Exports')}
-        {navLink('/dashboard/usage', 'Uso')}
-        <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          Workspace:
-          {workspaces.length > 0 ? (
-            <select value={workspaceId} onChange={handleWorkspaceChange} style={{ minWidth: 160 }}>
-              {workspaces.map((w) => (
-                <option key={w.id} value={String(w.id)}>{w.name}</option>
-              ))}
-            </select>
-          ) : (
-            <input
-              type="text"
-              value={workspaceId}
-              onChange={(e) => {
-                const v = e.target.value;
-                setWorkspaceId(v);
-                localStorage.setItem('workspace_id', v);
-              }}
-              style={{ width: 60 }}
-              placeholder="ID"
-            />
-          )}
+        {navLink('/dashboard', t('leads'))}
+        {navLink('/dashboard/jobs', t('jobs'))}
+        {navLink('/dashboard/config', t('config'))}
+        {navLink('/dashboard/api-keys', t('apiKeys'))}
+        {navLink('/dashboard/webhooks', t('webhooks'))}
+        {navLink('/dashboard/exports', t('exports'))}
+        {navLink('/dashboard/usage', t('usage'))}
+        <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <LanguageSwitcher />
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            Workspace:
+            {workspaces.length > 0 ? (
+              <select value={workspaceId} onChange={handleWorkspaceChange} style={{ minWidth: 160 }}>
+                {workspaces.map((w) => (
+                  <option key={w.id} value={String(w.id)}>{w.name}</option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="text"
+                value={workspaceId}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setWorkspaceId(v);
+                  localStorage.setItem('workspace_id', v);
+                }}
+                style={{ width: 60 }}
+                placeholder="ID"
+              />
+            )}
+          </span>
         </span>
       </nav>
       {children}

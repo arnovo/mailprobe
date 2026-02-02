@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+
 interface VerificationStatusBadgeProps {
   status: string;
   webMentioned?: boolean;
@@ -28,50 +30,51 @@ export function VerificationStatusBadge({
   provider,
   reason,
 }: VerificationStatusBadgeProps) {
+  const t = useTranslations('verification');
   const providerLabel = provider && provider !== 'other' ? PROVIDER_LABELS[provider] || provider : null;
 
   return (
     <span>
       {status === 'pending' && (
-        <span style={{ color: '#94a3b8' }}>Sin verificar</span>
+        <span style={{ color: '#94a3b8' }}>{t('status.pending')}</span>
       )}
       {status === 'valid' && (
-        <span style={{ color: '#4ade80', fontWeight: 500 }}>✓ Verificado</span>
+        <span style={{ color: '#4ade80', fontWeight: 500 }}>✓ {t('status.valid')}</span>
       )}
       {status === 'risky' && (
         <span 
           style={{ color: '#fbbf24' }} 
           title={reason || (smtpBlocked 
-            ? 'SMTP no disponible en este entorno. Resultado basado en DNS y patrones.' 
-            : 'El servidor acepta emails pero tiene catch-all activo')}
+            ? t('noSmtpNote')
+            : 'Server accepts emails but has catch-all active')}
         >
-          ⚠ Probable
+          ⚠ {t('status.risky')}
         </span>
       )}
       {status === 'unknown' && (
         <>
           <span 
             style={{ color: '#f97316' }} 
-            title={reason || 'No se pudo verificar por SMTP (firewall, timeout). El email mostrado es el candidato más probable.'}
+            title={reason || 'Could not verify via SMTP (firewall, timeout). Email shown is the most likely candidate.'}
           >
-            ? No verificable
+            ? {t('status.unknown')}
           </span>
           <span style={{ display: 'block', fontSize: '0.7rem', color: '#a1a1aa', marginTop: '0.125rem' }}>
-            Servidor no responde
+            Server not responding
           </span>
         </>
       )}
       {status === 'invalid' && (
-        <span style={{ color: '#ef4444' }}>✗ Inválido</span>
+        <span style={{ color: '#ef4444' }}>✗ {t('status.invalid')}</span>
       )}
       
       {/* SMTP blocked indicator */}
       {smtpBlocked && status !== 'invalid' && status !== 'pending' && (
         <span 
           style={{ display: 'block', fontSize: '0.65rem', color: '#a78bfa', marginTop: '0.125rem' }}
-          title="El puerto SMTP (25) está bloqueado en este entorno. El resultado se basa en señales DNS y patrones."
+          title={t('smtpBlockedMessage')}
         >
-          ⚡ Sin SMTP
+          ⚡ {t('signals.smtpBlocked')}
         </span>
       )}
       
@@ -79,7 +82,7 @@ export function VerificationStatusBadge({
       {providerLabel && status !== 'invalid' && status !== 'pending' && (
         <span 
           style={{ display: 'block', fontSize: '0.65rem', color: '#60a5fa', marginTop: '0.125rem' }}
-          title={`Proveedor de email detectado: ${providerLabel}`}
+          title={t('signals.provider', { provider: providerLabel })}
         >
           📧 {providerLabel}
         </span>
@@ -89,9 +92,9 @@ export function VerificationStatusBadge({
       {webMentioned && (
         <span 
           style={{ display: 'block', fontSize: '0.7rem', color: '#4ade80', marginTop: '0.125rem' }} 
-          title="El email aparece en páginas públicas (búsqueda web), lo que aumenta su fiabilidad."
+          title="Email found on public pages (web search), increasing reliability."
         >
-          ✓ Encontrado en web
+          ✓ {t('signals.web')}
         </span>
       )}
     </span>

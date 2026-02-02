@@ -1,82 +1,82 @@
 # Mailprobe
 
-Producto listo para producción: encontrar y verificar emails B2B, multi-tenant, integrado con **n8n** (webhooks, API estable, API Keys, idempotencia). Cumplimiento España/GDPR (LOPDGDD).
+Production-ready product: find and verify B2B emails, multi-tenant, integrated with **n8n** (webhooks, stable API, API Keys, idempotency). Spain/GDPR compliant (LOPDGDD).
 
-**Stack:** Backend Python + FastAPI, PostgreSQL, Celery + Redis, Frontend Next.js (TypeScript). Deploy: Docker Compose local; fácil en Render/Fly/DigitalOcean/Kubernetes.
-
----
-
-## Requisitos
-
-- Docker y Docker Compose
-- (Opcional local) Python 3.12+, Node 20+
+**Stack:** Backend Python + FastAPI, PostgreSQL, Celery + Redis, Frontend Next.js (TypeScript). Deploy: Docker Compose local; easy on Render/Fly/DigitalOcean/Kubernetes.
 
 ---
 
-## Servicios externos y posibles costes
+## Requirements
 
-Este proyecto **no usa APIs de pago** para la lógica core (encontrar/verificar emails). Los únicos “servicios externos” son infraestructura y, opcionalmente, billing.
-
-| Servicio | Uso | Coste |
-|----------|-----|--------|
-| **PostgreSQL** | Base de datos (leads, usuarios, jobs, etc.) | **Gestionado:** Render ~7 €/mes, Fly.io ~5 €/mes, Neon/Supabase free tier. **Self-hosted:** 0 € si ya tienes servidor. |
-| **Redis** | Cola Celery (jobs, webhooks) | **Gestionado:** Upstash free tier (10k comandos/día), Redis Cloud free. **Self-hosted:** 0 €. |
-| **DNS (MX lookup)** | Resolución MX para verificación | **Resolvedor del sistema** (lib `dnspython`). No usamos API de pago (Google DNS, etc.). **0 €**. |
-| **SMTP (probe)** | Conexión a servidores MX de los dominios que verificas (Gmail, O365, etc.) | **No enviamos correo.** Solo hacemos RCPT TO a *sus* servidores. **0 €** (no hay SendGrid, SES, etc.). **Nota:** En muchos entornos (Docker, cloud) el **puerto 25** está bloqueado o limitado; la verificación SMTP puede fallar o tardar. Timeout configurable: `SMTP_TIMEOUT_SECONDS` (default 5). |
-| **Búsqueda web (opcional)** | Comprobar si el email aparece en páginas públicas | **Opcional (configurable por workspace).** Si el MX no responde (firewall, Barracuda...) se busca si el email aparece en la web. Providers: **Serper.dev** (Google, 2500/mes gratis) o **Bing** (retirado agosto 2025). Se configura en **Dashboard → Configuración**. |
-| **Webhooks outbound** | Llamadas HTTP a tus URLs (n8n, etc.) | **0 €** (solo tráfico saliente de tu servidor). |
-| **Stripe** | Billing (planes de pago) | **Solo si lo integras.** Modelo preparado en BD (`stripe_customer_id`, etc.) pero no implementado. Stripe cobra ~1,5 % + 0,25 € por transacción. |
-
-**Resumen:**  
-- **Local / self-hosted:** coste 0 € en servicios externos (solo tu máquina/servidor).  
-- **Deploy gestionado (Render/Fly/DO):** coste típico **~5–15 €/mes** (Postgres + Redis + 1–2 instancias).  
-- **Sin coste por verificación:** no hay proveedor externo de “email verification API” (ZeroBounce, NeverBounce, etc.); la verificación es propia (MX + SMTP probe). Opcionalmente puedes añadir búsqueda web (Serper.dev o Bing) para marcar si el email aparece en fuentes públicas; cada workspace lo configura con su propia API key en **Dashboard → Configuración**.
+- Docker and Docker Compose
+- (Optional for local dev) Python 3.12+, Node 20+
 
 ---
 
-## Verificación sin SMTP (entornos con puerto 25 bloqueado)
+## External Services and Potential Costs
 
-El puerto 25 (SMTP) está bloqueado en muchos entornos:
-- **Docker Desktop (macOS/Windows):** El puerto 25 outbound está filtrado.
-- **Cloud providers:** AWS, GCP, Azure bloquean o limitan el puerto 25 por defecto.
-- **ISPs residenciales:** Muchos bloquean el puerto 25 para prevenir spam.
+This project **does not use paid APIs** for core logic (finding/verifying emails). The only "external services" are infrastructure and, optionally, billing.
 
-### Detección automática
+| Service | Usage | Cost |
+|---------|-------|------|
+| **PostgreSQL** | Database (leads, users, jobs, etc.) | **Managed:** Render ~€7/month, Fly.io ~€5/month, Neon/Supabase free tier. **Self-hosted:** €0 if you have a server. |
+| **Redis** | Celery queue (jobs, webhooks) | **Managed:** Upstash free tier (10k commands/day), Redis Cloud free. **Self-hosted:** €0. |
+| **DNS (MX lookup)** | MX resolution for verification | **System resolver** (`dnspython` lib). No paid API (Google DNS, etc.). **€0**. |
+| **SMTP (probe)** | Connection to MX servers of domains you verify (Gmail, O365, etc.) | **We don't send email.** We only do RCPT TO to *their* servers. **€0** (no SendGrid, SES, etc.). **Note:** In many environments (Docker, cloud) **port 25** is blocked or limited; SMTP verification may fail or timeout. Configurable timeout: `SMTP_TIMEOUT_SECONDS` (default 5). |
+| **Web search (optional)** | Check if email appears on public pages | **Optional (configurable per workspace).** If MX doesn't respond (firewall, Barracuda...) we search if the email appears on the web. Providers: **Serper.dev** (Google, 2500/month free) or **Bing** (deprecated August 2025). Configure in **Dashboard → Config**. |
+| **Outbound webhooks** | HTTP calls to your URLs (n8n, etc.) | **€0** (only outbound traffic from your server). |
+| **Stripe** | Billing (paid plans) | **Only if you integrate it.** Model ready in DB (`stripe_customer_id`, etc.) but not implemented. Stripe charges ~1.5% + €0.25 per transaction. |
 
-El sistema detecta automáticamente cuando SMTP está bloqueado:
-- Si hay timeouts a 3+ servidores MX distintos en 5 minutos, se activa el flag `smtp_blocked`.
-- El flag se guarda en Redis con TTL de 15 minutos.
-- Mientras está activo, las verificaciones **no intentan probes SMTP** (ahorra tiempo y recursos).
+**Summary:**
+- **Local / self-hosted:** €0 external services cost (only your machine/server).
+- **Managed deploy (Render/Fly/DO):** typical cost **~€5–15/month** (Postgres + Redis + 1–2 instances).
+- **No verification cost:** no external "email verification API" provider (ZeroBounce, NeverBounce, etc.); verification is built-in (MX + SMTP probe). Optionally you can add web search (Serper.dev or Bing) to check if email appears in public sources; each workspace configures it with its own API key in **Dashboard → Config**.
 
-### Señales alternativas
+---
 
-Cuando SMTP no está disponible, el verificador usa señales alternativas:
+## SMTP-less Verification (environments with port 25 blocked)
 
-| Señal | Descripción | Puntos |
-|-------|-------------|--------|
-| **MX** | Registros MX encontrados | +20 |
-| **SPF** | Registro SPF configurado | +10 |
-| **DMARC** | Política DMARC configurada | +10 |
-| **Provider** | Proveedor conocido (Google, Microsoft, etc.) | +10 |
-| **Web** | Email encontrado en fuentes públicas | +15 |
+Port 25 (SMTP) is blocked in many environments:
+- **Docker Desktop (macOS/Windows):** Port 25 outbound is filtered.
+- **Cloud providers:** AWS, GCP, Azure block or limit port 25 by default.
+- **Residential ISPs:** Many block port 25 to prevent spam.
 
-### Estados de verificación
+### Automatic Detection
 
-| Estado | Significado |
-|--------|-------------|
-| `valid` | SMTP confirmó que el mailbox existe (solo si SMTP disponible) |
-| `risky` | Señales positivas (MX, SPF, DMARC) pero sin confirmación SMTP |
-| `unknown` | SMTP disponible pero respuesta inconclusa (greylist real) |
-| `invalid` | Formato malo, dominio desechable, sin MX, o SMTP rechazó (550) |
+The system automatically detects when SMTP is blocked:
+- If there are timeouts to 3+ distinct MX servers in 5 minutes, the `smtp_blocked` flag is activated.
+- The flag is stored in Redis with a 15-minute TTL.
+- While active, verifications **do not attempt SMTP probes** (saves time and resources).
 
-### Campos de API
+### Alternative Signals
 
-La respuesta de verificación incluye señales detalladas:
+When SMTP is unavailable, the verifier uses alternative signals:
+
+| Signal | Description | Points |
+|--------|-------------|--------|
+| **MX** | MX records found | +20 |
+| **SPF** | SPF record configured | +10 |
+| **DMARC** | DMARC policy configured | +10 |
+| **Provider** | Known provider (Google, Microsoft, etc.) | +10 |
+| **Web** | Email found in public sources | +15 |
+
+### Verification Statuses
+
+| Status | Meaning |
+|--------|---------|
+| `valid` | SMTP confirmed the mailbox exists (only if SMTP available) |
+| `risky` | Positive signals (MX, SPF, DMARC) but no SMTP confirmation |
+| `unknown` | SMTP available but inconclusive response (real greylist) |
+| `invalid` | Bad format, disposable domain, no MX, or SMTP rejected (550) |
+
+### API Fields
+
+The verification response includes detailed signals:
 
 ```json
 {
   "best_result": {
-    "email": "juan.garcia@empresa.com",
+    "email": "john.smith@company.com",
     "status": "risky",
     "confidence_score": 75,
     "mx_found": true,
@@ -93,58 +93,58 @@ La respuesta de verificación incluye señales detalladas:
 }
 ```
 
-### Recomendación para producción
+### Production Recommendation
 
-Para verificación SMTP completa, despliega el worker en un VPS con puerto 25 abierto (OVH, Hetzner, DigitalOcean en regiones que lo permiten). El backend/API puede seguir en cloud con puerto 25 bloqueado; solo el worker Celery necesita acceso.
+For full SMTP verification, deploy the worker on a VPS with port 25 open (OVH, Hetzner, DigitalOcean in regions that allow it). The backend/API can remain in a cloud with port 25 blocked; only the Celery worker needs access.
 
 ---
 
-## Setup local (Docker Compose)
+## Local Setup (Docker Compose)
 
 ```bash
-# Clonar / entrar al repo
+# Clone / enter the repo
 cd mailprobe
 
-# Copiar env
+# Copy env
 cp backend/.env.example backend/.env
-# Ajustar JWT_SECRET_KEY y demás si quieres
+# Adjust JWT_SECRET_KEY and others if needed
 
-# Levantar servicios
+# Start services
 docker compose up -d
 
-# Migraciones
+# Migrations
 docker compose run --rm backend alembic -c alembic.ini upgrade head
 
-# Crear workspace y usuario admin (sustituir email)
-docker compose run --rm backend python -m scripts.create_workspace --email admin@example.com --password changeme --workspace-name "Mi Empresa" --workspace-slug default
+# Create workspace and admin user (replace email)
+docker compose run --rm backend python -m scripts.create_workspace --email admin@example.com --password changeme --workspace-name "My Company" --workspace-slug default
 ```
 
-- **Backend API:** http://localhost:8000  
-- **Docs Swagger:** http://localhost:8000/docs  
-- **Frontend:** http://localhost:3001  
+- **Backend API:** http://localhost:8000
+- **Swagger Docs:** http://localhost:8000/docs
+- **Frontend:** http://localhost:3001
 
-### Ver cambios en el frontend sin reconstruir
+### View frontend changes without rebuilding
 
-Solo debe estar **uno** de los dos frontends activo. Con el compose de desarrollo, **backend, frontend, worker y beat** usan montaje de código y hot reload (no hace falta reconstruir).
+Only **one** frontend should be active. With the dev compose, **backend, frontend, worker and beat** use code mounting and hot reload (no rebuild needed).
 
-| Puerto | Cuándo | Qué es |
-|--------|--------|--------|
-| **3001** | `docker compose up -d` (sin dev) | Frontend **producción**: build fijo, sin hot reload. |
-| **3002** | `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d` | Frontend **desarrollo**: código montado, `npm run dev`, hot reload. Backend con `uvicorn --reload`. Worker y beat con `watchmedo` (reinicio al cambiar `.py`). |
+| Port | When | What |
+|------|------|------|
+| **3001** | `docker compose up -d` (without dev) | **Production** frontend: fixed build, no hot reload. |
+| **3002** | `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d` | **Development** frontend: mounted code, `npm run dev`, hot reload. Backend with `uvicorn --reload`. Worker and beat with `watchmedo` (restart on `.py` changes). |
 
-Si tienes los dos levantados, para dejar solo el de desarrollo: `docker compose stop frontend` y luego `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d frontend`. Para volver a producción: para el dev y `docker compose up -d frontend`.
+If you have both running, to keep only development: `docker compose stop frontend` then `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d frontend`. To return to production: stop dev and `docker compose up -d frontend`.
 
-**Opción A — Todo en Docker con hot reload**
+**Option A — All in Docker with hot reload**
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 ```
 
-- **Backend:** monta `./backend` y ejecuta `uvicorn --reload`; los cambios en Python se recargan solos.
-- **Worker y beat:** usan la misma imagen que backend (con `watchdog`), montan `./backend` y ejecutan `watchmedo auto-restart`; al cambiar cualquier `.py` se reinician. Solo hace falta construir una vez: `docker compose build backend`.
-- **Frontend:** monta `./frontend`, ejecuta `npm run dev`; Next.js recarga al editar. Se expone en **http://localhost:3002**.
+- **Backend:** mounts `./backend` and runs `uvicorn --reload`; Python changes reload automatically.
+- **Worker and beat:** use the same backend image (with `watchdog`), mount `./backend` and run `watchmedo auto-restart`; they restart on any `.py` change. Only need to build once: `docker compose build backend`.
+- **Frontend:** mounts `./frontend`, runs `npm run dev`; Next.js reloads on edits. Exposed at **http://localhost:3002**.
 
-**Opción B — Frontend en local**
+**Option B — Frontend locally**
 
 ```bash
 cd frontend
@@ -152,14 +152,14 @@ npm install
 npm run dev
 ```
 
-Backend, Postgres y Redis siguen en Docker; el frontend en http://localhost:3001 usa la API en http://localhost:8000.
+Backend, Postgres and Redis stay in Docker; frontend at http://localhost:3001 uses API at http://localhost:8000.
 
 ---
 
-## Crear API Key (para n8n)
+## Create API Key (for n8n)
 
-1. Iniciar sesión en el frontend (o usar `POST /v1/auth/login`).
-2. Con el token, crear API key (o usar endpoint si lo expones en UI):
+1. Log in to the frontend (or use `POST /v1/auth/login`).
+2. With the token, create API key (or use endpoint if exposed in UI):
 
 ```bash
 # Login
@@ -167,7 +167,7 @@ curl -s -X POST http://localhost:8000/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@example.com","password":"changeme"}' | jq .
 
-# Crear API Key (usa el access_token y X-Workspace-Id del workspace que te devolvió create_workspace, ej. 1)
+# Create API Key (use access_token and X-Workspace-Id from workspace returned by create_workspace, e.g. 1)
 curl -s -X POST http://localhost:8000/v1/api-keys \
   -H "Authorization: Bearer <ACCESS_TOKEN>" \
   -H "X-Workspace-Id: 1" \
@@ -175,59 +175,59 @@ curl -s -X POST http://localhost:8000/v1/api-keys \
   -d '{"name":"n8n","scopes":["leads:read","leads:write","verify:run","exports:run","optout:write","webhooks:write"]}' | jq .
 ```
 
-Guarda el `key` (solo se muestra una vez). Ejemplo: `ef_xxxxxxxx.yyyyyyyy`.
+Save the `key` (shown only once). Example: `ef_xxxxxxxx.yyyyyyyy`.
 
 ---
 
-## Flujo de un lead y cómo buscar el contacto
+## Lead Flow and How to Find the Contact
 
-1. **Añadir lead:** `POST /v1/leads` (o bulk `POST /v1/leads/bulk`) con `first_name`, `last_name`, `domain`, `company`, etc. El lead se guarda **sin email** (`email_best` vacío) hasta que se verifica.
+1. **Add lead:** `POST /v1/leads` (or bulk `POST /v1/leads/bulk`) with `first_name`, `last_name`, `domain`, `company`, etc. The lead is saved **without email** (`email_best` empty) until verified.
 
-2. **Buscar/verificar el contacto (encontrar el email):**
-   - **Por lead guardado:** `POST /v1/leads/{lead_id}/verify` → encola un job que genera candidatos de email a partir del nombre + dominio del lead, elige el mejor y actualiza el lead. Devuelve `job_id`. Consulta el estado con `GET /v1/jobs/{job_id}`; al completar el lead tendrá `email_best` y `verification_status`.
-   - **Stateless (sin guardar):** `POST /v1/verify` con body `{ "first_name", "last_name", "domain" }` → devuelve al momento `candidates` y `best` (mejor email). No actualiza ningún lead; útil para probar o integrar en un flujo donde no quieres persistir.
+2. **Search/verify the contact (find the email):**
+   - **By saved lead:** `POST /v1/leads/{lead_id}/verify` → queues a job that generates email candidates from lead's name + domain, picks the best one and updates the lead. Returns `job_id`. Check status with `GET /v1/jobs/{job_id}`; when complete the lead will have `email_best` and `verification_status`.
+   - **Stateless (without saving):** `POST /v1/verify` with body `{ "first_name", "last_name", "domain" }` → returns immediately `candidates` and `best` (best email). Doesn't update any lead; useful for testing or integration flows where you don't want to persist.
 
-3. **En el frontend:** En Dashboard → Leads hay un botón **Verificar** por fila. Al pulsarlo se encola el job y la UI hace poll a `GET /v1/jobs/{job_id}` hasta que termine; entonces se actualiza la lista. **Importante:** el job lo ejecuta el **worker de Celery**. Si el worker no está en marcha, el job nunca se ejecuta y la verificación “no hace nada”. Comprueba con `docker compose ps` que `mailprobe-worker-1` esté **Up**.
-
----
-
-## Colección Postman
-
-En `postman/Mailprobe-API.postman_collection.json` hay una colección lista para importar en Postman:
-
-1. **Importar:** Postman → Import → sube el JSON (o arrastra el archivo).
-2. **Variables:** `base_url` = `http://localhost:8000`; tras ejecutar **Login** se guarda `access_token`; tras **List workspaces** se guarda `workspace_id`. Para API Key: crear una clave y ponerla en `api_key`.
-3. **Auth:** Por defecto la colección usa Bearer (`access_token`). Las peticiones que requieren workspace en UI usan header `X-Workspace-Id: {{workspace_id}}`. La carpeta "Auth con API Key" tiene ejemplos usando solo `X-API-Key: {{api_key}}` (sin workspace en header).
-
-Incluye: Health, Auth (register/login/refresh/me), Workspaces, Leads (create/bulk/list/get/verify), Verify stateless, Jobs, Opt-out, Exports, Webhooks, Usage, API Keys y ejemplos con API Key.
+3. **In the frontend:** In Dashboard → Leads there's a **Verify** button per row. Clicking it queues the job and the UI polls `GET /v1/jobs/{job_id}` until completion; then the list updates. **Important:** the job is executed by the **Celery worker**. If the worker isn't running, the job never executes and verification "does nothing". Check with `docker compose ps` that `mailprobe-worker-1` is **Up**.
 
 ---
 
-## Ejemplos cURL para n8n
+## Postman Collection
 
-Base: `BASE=http://localhost:8000` y `KEY=ef_xxx.yyy` (tu API key). No hace falta Bearer si usas API key.
+In `postman/Mailprobe-API.postman_collection.json` there's a ready-to-import collection for Postman:
 
-### 1) Crear/actualizar lead (upsert)
+1. **Import:** Postman → Import → upload the JSON (or drag the file).
+2. **Variables:** `base_url` = `http://localhost:8000`; after running **Login** it saves `access_token`; after **List workspaces** it saves `workspace_id`. For API Key: create a key and set it in `api_key`.
+3. **Auth:** By default the collection uses Bearer (`access_token`). Requests requiring workspace in UI use header `X-Workspace-Id: {{workspace_id}}`. The "Auth with API Key" folder has examples using only `X-API-Key: {{api_key}}` (no workspace in header).
+
+Includes: Health, Auth (register/login/refresh/me), Workspaces, Leads (create/bulk/list/get/verify), Verify stateless, Jobs, Opt-out, Exports, Webhooks, Usage, API Keys and API Key examples.
+
+---
+
+## cURL Examples for n8n
+
+Base: `BASE=http://localhost:8000` and `KEY=ef_xxx.yyy` (your API key). No Bearer needed if using API key.
+
+### 1) Create/update lead (upsert)
 
 ```bash
 curl -s -X POST "$BASE/v1/leads" \
   -H "X-API-Key: $KEY" \
   -H "Content-Type: application/json" \
-  -H "Idempotency-Key: lead-1-marta-garcia" \
+  -H "Idempotency-Key: lead-1-john-smith" \
   -d '{
-    "first_name": "Marta",
-    "last_name": "García",
+    "first_name": "John",
+    "last_name": "Smith",
     "title": "Head of Sales",
-    "company": "Ejemplo SA",
+    "company": "Example Inc",
     "domain": "example.com",
-    "linkedin_url": "https://www.linkedin.com/in/marta-garcia-ejemplo/",
+    "linkedin_url": "https://www.linkedin.com/in/john-smith-example/",
     "source": "linkedin_manual",
     "lawful_basis": "legitimate_interest",
     "purpose": "b2b_sales_outreach"
   }' | jq .
 ```
 
-### 2) Bulk upsert leads (hasta N)
+### 2) Bulk upsert leads (up to N)
 
 ```bash
 curl -s -X POST "$BASE/v1/leads/bulk" \
@@ -237,83 +237,83 @@ curl -s -X POST "$BASE/v1/leads/bulk" \
   -d '{
     "leads": [
       {
-        "first_name": "Marta",
-        "last_name": "García",
-        "company": "Ejemplo SA",
+        "first_name": "John",
+        "last_name": "Smith",
+        "company": "Example Inc",
         "domain": "example.com",
-        "linkedin_url": "https://www.linkedin.com/in/marta-garcia-ejemplo/",
+        "linkedin_url": "https://www.linkedin.com/in/john-smith-example/",
         "source": "csv_import"
       },
       {
-        "first_name": "Juan",
-        "last_name": "Pérez",
-        "company": "Ejemplo SA",
+        "first_name": "Jane",
+        "last_name": "Doe",
+        "company": "Example Inc",
         "domain": "example.com",
-        "linkedin_url": "https://www.linkedin.com/in/juan-perez-ejemplo/",
+        "linkedin_url": "https://www.linkedin.com/in/jane-doe-example/",
         "source": "csv_import"
       }
     ]
   }' | jq .
 ```
 
-### 3) Encolar verificación de un lead
+### 3) Queue lead verification
 
 ```bash
-# Primero obtén un lead_id (listado o creación)
+# First get a lead_id (from list or creation)
 curl -s -X POST "$BASE/v1/leads/1/verify" \
   -H "X-API-Key: $KEY" \
   -H "Idempotency-Key: verify-lead-1" | jq .
-# Respuesta: { "data": { "job_id": "uuid" } }
+# Response: { "data": { "job_id": "uuid" } }
 ```
 
-### 4) Verificación “stateless” (nombre + dominio → candidatos + best)
+### 4) Stateless verification (name + domain → candidates + best)
 
 ```bash
 curl -s -X POST "$BASE/v1/verify" \
   -H "X-API-Key: $KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "first_name": "Marta",
-    "last_name": "García",
+    "first_name": "John",
+    "last_name": "Smith",
     "domain": "example.com"
   }' | jq .
 ```
 
-### 5) Estado de un job
+### 5) Job status
 
 ```bash
 curl -s "$BASE/v1/jobs/<JOB_ID>" \
   -H "X-API-Key: $KEY" | jq .
 ```
 
-### 6) Detalle de un lead
+### 6) Lead details
 
 ```bash
 curl -s "$BASE/v1/leads/1" \
   -H "X-API-Key: $KEY" | jq .
 ```
 
-### 7) Listado de leads (paginación y filtros)
+### 7) List leads (pagination and filters)
 
 ```bash
 curl -s "$BASE/v1/leads?page=1&page_size=20&verification_status=valid&domain=example.com" \
   -H "X-API-Key: $KEY" | jq .
 ```
 
-### 8) Opt-out (baja)
+### 8) Opt-out (unsubscribe)
 
 ```bash
-# Por email
+# By email
 curl -s -X POST "$BASE/v1/optout" \
   -H "X-API-Key: $KEY" \
   -H "Content-Type: application/json" \
-  -d '{"email": "user@example.com", "reason": "solicitud usuario"}' | jq .
+  -d '{"email": "user@example.com", "reason": "user request"}' | jq .
 
-# Por lead_id
+# By lead_id
 curl -s -X POST "$BASE/v1/optout" \
   -H "X-API-Key: $KEY" \
   -H "Content-Type: application/json" \
-  -d '{"lead_id": 1, "reason": "baja"}' | jq .
+  -d '{"lead_id": 1, "reason": "unsubscribe"}' | jq .
 ```
 
 ### 9) Export CSV (async)
@@ -322,19 +322,19 @@ curl -s -X POST "$BASE/v1/optout" \
 curl -s -X POST "$BASE/v1/exports/csv" \
   -H "X-API-Key: $KEY" \
   -H "Idempotency-Key: export-001" | jq .
-# Respuesta: { "data": { "job_id": "uuid" } }
-# Poll: GET /v1/jobs/<job_id> → result.csv contiene el CSV en base64 o texto
+# Response: { "data": { "job_id": "uuid" } }
+# Poll: GET /v1/jobs/<job_id> → result.csv contains CSV in base64 or text
 ```
 
-### 10) Webhooks (registro y test)
+### 10) Webhooks (register and test)
 
 ```bash
-# Registrar webhook (eventos: lead.created, lead.updated, verification.completed, export.completed, optout.created)
+# Register webhook (events: lead.created, lead.updated, verification.completed, export.completed, optout.created)
 curl -s -X POST "$BASE/v1/webhooks" \
   -H "X-API-Key: $KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "url": "https://tu-n8n.com/webhook/mailprobe",
+    "url": "https://your-n8n.com/webhook/mailprobe",
     "events": ["verification.completed", "export.completed"]
   }' | jq .
 
@@ -342,7 +342,7 @@ curl -s -X POST "$BASE/v1/webhooks" \
 curl -s -X POST "$BASE/v1/webhooks/test" -H "X-API-Key: $KEY" | jq .
 ```
 
-### 11) Uso (cuota)
+### 11) Usage (quota)
 
 ```bash
 curl -s "$BASE/v1/usage" -H "X-API-Key: $KEY" | jq .
@@ -350,29 +350,29 @@ curl -s "$BASE/v1/usage" -H "X-API-Key: $KEY" | jq .
 
 ---
 
-## Formato de respuesta API
+## API Response Format
 
-- Éxito: `{ "data": ..., "error": null }`
+- Success: `{ "data": ..., "error": null }`
 - Error: `{ "data": null, "error": { "code": "...", "message": "...", "details": {} } }`
-- Paginación: `data.items`, `data.page`, `data.page_size`, `data.total`
+- Pagination: `data.items`, `data.page`, `data.page_size`, `data.total`
 - Jobs: `data.job_id`, `data.status` (queued|running|succeeded|failed), `data.result`, `data.error`
 
 ---
 
-## Ejemplo workflow n8n (JSON)
+## Example n8n Workflow (JSON)
 
-Flujo típico: recibir webhook/Google Sheet → upsert lead → encolar verificación → esperar webhook `verification.completed` → si valid/risky, escribir en Sheets/CRM.
+Typical flow: receive webhook/Google Sheet → upsert lead → queue verification → wait for `verification.completed` webhook → if valid/risky, write to Sheets/CRM.
 
-Puedes importar en n8n un workflow con:
+You can import an n8n workflow with:
 
-1. **Webhook** o **Google Sheets** (trigger): nuevo lead (nombre, apellido, empresa, dominio, linkedin_url).
-2. **HTTP Request** – POST `/v1/leads` con body del paso 1, header `X-API-Key` y `Idempotency-Key` (ej. `n8n-{{ $runId }}-{{ $item.id }}`).
-3. **HTTP Request** – POST `/v1/leads/{{ $json.data.id }}/verify` (encolar verificación).
-4. **Webhook** (esperar): URL pública de n8n que reciba evento `verification.completed`; verificar firma HMAC con el secret del webhook.
-5. **IF** – `event === 'verification.completed'` y `data.verification_status` in ['valid','risky'].
-6. **Google Sheets / CRM** – añadir fila con lead + email_best + status.
+1. **Webhook** or **Google Sheets** (trigger): new lead (first_name, last_name, company, domain, linkedin_url).
+2. **HTTP Request** – POST `/v1/leads` with body from step 1, header `X-API-Key` and `Idempotency-Key` (e.g. `n8n-{{ $runId }}-{{ $item.id }}`).
+3. **HTTP Request** – POST `/v1/leads/{{ $json.data.id }}/verify` (queue verification).
+4. **Webhook** (wait): public n8n URL that receives `verification.completed` event; verify HMAC signature with webhook secret.
+5. **IF** – `event === 'verification.completed'` and `data.verification_status` in ['valid','risky'].
+6. **Google Sheets / CRM** – add row with lead + email_best + status.
 
-Ejemplo mínimo (guardar como `n8n_workflow_mailprobe.json` e importar en n8n):
+Minimal example (save as `n8n_workflow_mailprobe.json` and import in n8n):
 
 ```json
 {
@@ -417,7 +417,7 @@ Ejemplo mínimo (guardar como `n8n_workflow_mailprobe.json` e importar en n8n):
     },
     {
       "id": "enqueue_verify",
-      "name": "Encolar Verificación",
+      "name": "Queue Verification",
       "type": "n8n-nodes-base.httpRequest",
       "position": [440, 0],
       "parameters": {
@@ -436,29 +436,29 @@ Ejemplo mínimo (guardar como `n8n_workflow_mailprobe.json` e importar en n8n):
   ],
   "connections": {
     "Webhook Lead": { "main": [[{ "node": "Upsert Lead", "type": "main", "index": 0 }]] },
-    "Upsert Lead": { "main": [[{ "node": "Encolar Verificación", "type": "main", "index": 0 }]] }
+    "Upsert Lead": { "main": [[{ "node": "Queue Verification", "type": "main", "index": 0 }]] }
   }
 }
 ```
 
-Configura en n8n la variable de entorno `MAILPROBE_API_KEY` con tu API key.
+Configure in n8n the environment variable `MAILPROBE_API_KEY` with your API key.
 
 ---
 
-## Estructura del repo (monorepo)
+## Repository Structure (monorepo)
 
 ```
 mailprobe/
 ├── backend/           # FastAPI + Alembic + Celery
 │   ├── app/
-│   │   ├── api/v1/    # Rutas v1
+│   │   ├── api/v1/    # v1 routes
 │   │   ├── core/      # config, db, security
 │   │   ├── models/
 │   │   ├── schemas/
 │   │   ├── services/  # verifier, email_patterns, usage_plan
-│   │   └── tasks/    # Celery: verify, exports, webhooks, retention
+│   │   └── tasks/     # Celery: verify, exports, webhooks, retention
 │   ├── alembic/
-│   ├── scripts/      # create_workspace
+│   ├── scripts/       # create_workspace
 │   ├── requirements.txt
 │   ├── Dockerfile
 │   └── .env.example
@@ -472,12 +472,12 @@ mailprobe/
 └── README.md
 ```
 
-## Migraciones
+## Migrations
 
 ```bash
 cd backend
 alembic -c alembic.ini upgrade head
-alembic -c alembic.ini revision -m "desc"  # nueva revisión
+alembic -c alembic.ini revision -m "desc"  # new revision
 ```
 
 ## Tests (backend)
@@ -488,28 +488,28 @@ pip install -r requirements.txt
 pytest -v
 ```
 
-## Desarrollo
+## Development
 
 ### Branch Protection
 
-La rama `main` está protegida:
-- **No se permiten commits directos** (requiere PR)
-- **CI debe pasar** (`backend-tests`, `frontend-tests`) antes de mergear
-- **Aplica a todos**, incluidos admins
-- **Force push bloqueado**
+The `main` branch is protected:
+- **No direct commits allowed** (requires PR)
+- **CI must pass** (`backend-tests`, `frontend-tests`) before merging
+- **Applies to everyone**, including admins
+- **Force push blocked**
 
-GitHub Actions solo se ejecuta en PRs (no en push a main).
+GitHub Actions only runs on PRs (not on push to main).
 
 ### Git Hooks
 
-El proyecto incluye hooks de git que se instalan automáticamente con `./validate.sh`:
+The project includes git hooks that are automatically installed with `./validate.sh`:
 
-| Hook | Archivo fuente | Validaciones |
-|------|----------------|--------------|
-| **pre-commit** | `scripts/pre-commit.sh` | Secretos, tamaño archivos, ruff, eslint, TypeScript, pytest, conteo de tests |
-| **pre-push** | `scripts/pre-push.sh` | Formato de commits (Conventional Commits) |
+| Hook | Source file | Validations |
+|------|-------------|-------------|
+| **pre-commit** | `scripts/pre-commit.sh` | Secrets, file size, ruff, eslint, TypeScript, pytest, test count |
+| **pre-push** | `scripts/pre-push.sh` | Commit format (Conventional Commits) |
 
-Instalación manual:
+Manual installation:
 
 ```bash
 cp scripts/pre-commit.sh .git/hooks/pre-commit
@@ -517,62 +517,62 @@ cp scripts/pre-push.sh .git/hooks/pre-push
 chmod +x .git/hooks/pre-commit .git/hooks/pre-push
 ```
 
-### Regla de tests
+### Test Rule
 
-Cada commit que modifique código Python en `backend/app/` **debe añadir al menos 1 test nuevo**. El pre-commit lo verifica automáticamente.
+Each commit modifying Python code in `backend/app/` **must add at least 1 new test**. The pre-commit verifies this automatically.
 
-Para commits que no requieren tests (typos, config, frontend-only):
+For commits that don't require tests (typos, config, frontend-only):
 
 ```bash
-# Saltar solo la verificación de tests (el resto de validaciones sigue activo)
-SKIP_TEST_COUNT=1 git commit -m "fix: typo en mensaje"
+# Skip only test count verification (other validations remain active)
+SKIP_TEST_COUNT=1 git commit -m "fix: typo in message"
 ```
 
 ### Pull Requests
 
-El proyecto incluye un template de PR en `.github/PULL_REQUEST_TEMPLATE.md`. Para validar antes de crear un PR:
+The project includes a PR template in `.github/PULL_REQUEST_TEMPLATE.md`. To validate before creating a PR:
 
 ```bash
 ./scripts/validate-pr.sh [base-branch]
 ```
 
-El script verifica:
-- Rama correcta (no main)
-- Commits siguen Conventional Commits
-- Tests pasan
+The script verifies:
+- Correct branch (not main)
+- Commits follow Conventional Commits
+- Tests pass
 - Linting OK
-- Sin secretos
+- No secrets
 
-### Validación completa
+### Full Validation
 
 ```bash
-./validate.sh              # Valida todo (instala hooks si faltan)
+./validate.sh              # Validate everything (installs hooks if missing)
 ./validate.sh --fix        # Auto-fix linters
-./validate.sh --skip-tests # Sin tests (más rápido)
-./validate.sh --backend    # Solo backend
-./validate.sh --frontend   # Solo frontend
+./validate.sh --skip-tests # Without tests (faster)
+./validate.sh --backend    # Backend only
+./validate.sh --frontend   # Frontend only
 ```
 
-## Despliegue (Render / Fly / DO)
+## Deploy (Render / Fly / DO)
 
-- **Backend:** servicio Web (uvicorn). Variables: `DATABASE_URL`, `REDIS_URL`, `CELERY_BROKER_URL`, `JWT_SECRET_KEY`, `CORS_ORIGINS` (incluye localhost:3001 y :3002 para front prod y dev).
-- **Worker:** servicio Background (Celery worker).
-- **Beat:** servicio Cron (Celery beat) opcional para retención.
-- **Frontend:** estático/SSR con `NEXT_PUBLIC_API_URL` apuntando al backend.
-- **PostgreSQL** y **Redis** gestionados (Render, Upstash, etc.).
+- **Backend:** Web service (uvicorn). Variables: `DATABASE_URL`, `REDIS_URL`, `CELERY_BROKER_URL`, `JWT_SECRET_KEY`, `CORS_ORIGINS` (include localhost:3001 and :3002 for prod and dev frontend).
+- **Worker:** Background service (Celery worker).
+- **Beat:** Cron service (Celery beat) optional for retention.
+- **Frontend:** static/SSR with `NEXT_PUBLIC_API_URL` pointing to backend.
+- **PostgreSQL** and **Redis** managed (Render, Upstash, etc.).
 
 ---
 
-## Compliance España / GDPR (LOPDGDD)
+## Spain / GDPR Compliance (LOPDGDD)
 
-- Campos obligatorios en leads: `source`, `lawful_basis` (por defecto `legitimate_interest`), `purpose` (`b2b_sales_outreach`), `collected_at`.
-- Opt-out: `POST /v1/optout`; bloquea export y verificación futura para ese email/dominio/lead.
-- Retención: job programado (Celery beat) anonimiza leads inactivos > X meses (config).
-- Auditoría: tabla `AuditLog` para acciones relevantes.
+- Required fields in leads: `source`, `lawful_basis` (default `legitimate_interest`), `purpose` (`b2b_sales_outreach`), `collected_at`.
+- Opt-out: `POST /v1/optout`; blocks export and future verification for that email/domain/lead.
+- Retention: scheduled job (Celery beat) anonymizes inactive leads > X months (configurable).
+- Audit: `AuditLog` table for relevant actions.
 
-## Notas
+## Notes
 
-- No se hace scraping de LinkedIn; los datos entran por CSV, API o n8n.
-- No se envían emails; solo encontrar/verificar y exportar.
-- Idempotencia: header `Idempotency-Key` en POST de leads, verify y exports.
-- Webhooks: firma HMAC, reintentos con backoff, DLQ para fallos.
+- No LinkedIn scraping; data comes via CSV, API or n8n.
+- No emails sent; only find/verify and export.
+- Idempotency: `Idempotency-Key` header in POST for leads, verify and exports.
+- Webhooks: HMAC signature, retries with backoff, DLQ for failures.

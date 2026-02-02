@@ -33,3 +33,6 @@ htmlcov/
 celerybeat-schedule
 .worker.pid
 *.tsbuildinfo
+
+# Project notes (local only)
+FUTURE_IMPROVEMENTS.md

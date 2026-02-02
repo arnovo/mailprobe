@@ -1,4 +1,5 @@
 """Verify schemas."""
+
 from __future__ import annotations
 
 from pydantic import BaseModel
@@ -12,6 +13,7 @@ class VerifyStatelessRequest(BaseModel):
 
 class VerifyCandidate(BaseModel):
     """Verification result for a single email candidate."""
+
     email: str
     status: str  # valid | invalid | risky | unknown
     confidence_score: int

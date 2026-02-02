@@ -1,4 +1,5 @@
 """Tracking de uso de Serper.dev API por workspace."""
+
 from __future__ import annotations
 
 import json
@@ -44,11 +45,11 @@ def get_serper_usage_sync(db: Session, workspace_id: int) -> dict[str, int]:
     )
     entry = r.scalars().first()
     usage_data = _parse_usage_data(entry.value if entry else None)
-    
+
     month_key = _get_current_month_key()
     current_month = usage_data.get(month_key, 0)
     total = sum(usage_data.values())
-    
+
     return {
         "current_month": current_month,
         "total": total,
@@ -69,21 +70,23 @@ def increment_serper_usage_sync(db: Session, workspace_id: int) -> int:
     )
     entry = r.scalars().first()
     usage_data = _parse_usage_data(entry.value if entry else None)
-    
+
     month_key = _get_current_month_key()
     usage_data[month_key] = usage_data.get(month_key, 0) + 1
-    
+
     new_value = json.dumps(usage_data)
-    
+
     if entry:
         entry.value = new_value
     else:
-        db.add(WorkspaceConfigEntry(
-            workspace_id=workspace_id,
-            key=SERPER_USAGE_KEY,
-            value=new_value,
-        ))
-    
+        db.add(
+            WorkspaceConfigEntry(
+                workspace_id=workspace_id,
+                key=SERPER_USAGE_KEY,
+                value=new_value,
+            )
+        )
+
     db.commit()
     return usage_data[month_key]
 
@@ -91,7 +94,7 @@ def increment_serper_usage_sync(db: Session, workspace_id: int) -> int:
 # Versiones async para los endpoints
 async def get_serper_usage_async(db, workspace_id: int) -> dict[str, int]:
     """Versión async de get_serper_usage_sync."""
-    
+
     r = await db.execute(
         select(WorkspaceConfigEntry).where(
             WorkspaceConfigEntry.workspace_id == workspace_id,
@@ -100,11 +103,11 @@ async def get_serper_usage_async(db, workspace_id: int) -> dict[str, int]:
     )
     entry = r.scalars().first()
     usage_data = _parse_usage_data(entry.value if entry else None)
-    
+
     month_key = _get_current_month_key()
     current_month = usage_data.get(month_key, 0)
     total = sum(usage_data.values())
-    
+
     return {
         "current_month": current_month,
         "total": total,

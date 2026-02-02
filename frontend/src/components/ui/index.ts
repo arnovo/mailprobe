@@ -1,5 +1,6 @@
 export { CancelButton } from './CancelButton';
 export { JobStatusBadge } from './JobStatusBadge';
+export { LanguageSwitcher } from './LanguageSwitcher';
 export { LogContent } from './LogContent';
 export { LogTable } from './LogTable';
 export { Modal } from './Modal';

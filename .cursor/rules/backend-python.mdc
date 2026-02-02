@@ -1,25 +1,25 @@
 ---
-description: Estándares Python para el backend FastAPI
+description: Python standards for the FastAPI backend
 globs: backend/**/*.py
 alwaysApply: false
 ---
 
-# Backend Python - Estándares
+# Backend Python - Standards
 
-## Principios SOLID
+## SOLID Principles
 
-1. **Single Responsibility**: Cada módulo/clase tiene una sola razón para cambiar
-   - `services/` = lógica de negocio
-   - `api/v1/` = solo routing y validación HTTP
-   - `models/` = solo definición ORM
-   - `schemas/` = solo validación Pydantic
+1. **Single Responsibility**: Each module/class has only one reason to change
+   - `services/` = business logic
+   - `api/v1/` = only routing and HTTP validation
+   - `models/` = only ORM definition
+   - `schemas/` = only Pydantic validation
 
-2. **Open/Closed**: Extender comportamiento sin modificar código existente
-   - Usar configuración por workspace en lugar de hardcodear
+2. **Open/Closed**: Extend behavior without modifying existing code
+   - Use per-workspace configuration instead of hardcoding
 
-3. **Dependency Inversion**: Inyectar dependencias (db session, config)
+3. **Dependency Inversion**: Inject dependencies (db session, config)
 
-## Estructura de Archivos
+## File Structure
 
 ```python
 # api/v1/leads.py - Endpoint
@@ -27,63 +27,63 @@ alwaysApply: false
 async def list_leads(db: AsyncSession = Depends(get_db)):
     ...
 
-# services/verifier.py - Lógica de negocio
+# services/verifier.py - Business logic
 def verify_email(email: str, config: dict) -> VerificationResult:
     ...
 
-# models/lead.py - Modelo ORM
+# models/lead.py - ORM Model
 class Lead(Base):
     __tablename__ = "leads"
     ...
 
-# schemas/lead.py - Validación
+# schemas/lead.py - Validation
 class LeadCreate(BaseModel):
     ...
 ```
 
-## Convenciones de Nombres
+## Naming Conventions
 
-- **Archivos**: snake_case (`email_patterns.py`, `workspace_config.py`)
-- **Clases**: PascalCase (`Lead`, `JobLogLine`, `WorkspaceConfigEntry`)
-- **Funciones/variables**: snake_case (`verify_email`, `get_workspace_config`)
-- **Constantes**: UPPER_SNAKE (`CONFIG_KEYS`, `FIRST_ONLY_PATTERNS`)
+- **Files**: snake_case (`email_patterns.py`, `workspace_config.py`)
+- **Classes**: PascalCase (`Lead`, `JobLogLine`, `WorkspaceConfigEntry`)
+- **Functions/variables**: snake_case (`verify_email`, `get_workspace_config`)
+- **Constants**: UPPER_SNAKE (`CONFIG_KEYS`, `FIRST_ONLY_PATTERNS`)
 
 ## Async vs Sync
 
 ```python
-# Endpoints FastAPI: SIEMPRE async
+# FastAPI endpoints: ALWAYS async
 async def get_lead(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Lead))
 
-# Tasks Celery: sync (usa Session, no AsyncSession)
+# Celery tasks: sync (uses Session, not AsyncSession)
 def verify_lead_task(lead_id: int):
     with SessionLocal() as db:
         lead = db.query(Lead).get(lead_id)
 ```
 
-## Manejo de Errores
+## Error Handling
 
 ```python
-# ❌ MAL
+# ❌ BAD
 try:
     result = do_something()
 except:
     pass
 
-# ✅ BIEN
+# ✅ GOOD
 try:
     result = do_something()
 except SpecificError as e:
-    logger.error(f"Error en operación: {e}")
+    logger.error(f"Operation error: {e}")
     raise HTTPException(status_code=400, detail=str(e))
 ```
 
 ## Logging
 
 ```python
-# Logs públicos (visibles para el usuario)
-add_log_line(job, "Verificando email...", visibility="public")
+# Public logs (visible to user)
+add_log_line(job, "Verifying email...", visibility="public")
 
-# Logs técnicos (solo superadmin)
+# Technical logs (superadmin only)
 add_log_line(job, f"SMTP response: {code}", visibility="superadmin")
 ```

@@ -1,53 +1,107 @@
 ---
-description: Reglas principales del proyecto Mailprobe
+description: Main project rules for Mailprobe
 alwaysApply: true
 ---
 
-# Mailprobe - Guía del Proyecto
+# Mailprobe - Project Guide
 
-## Stack Tecnológico
+## Tech Stack
 
 - **Backend**: FastAPI + SQLAlchemy (async) + PostgreSQL + Celery + Redis
 - **Frontend**: Next.js 14 (App Router) + TypeScript + Tailwind CSS
-- **Infraestructura**: Docker Compose (dev y prod)
+- **Infrastructure**: Docker Compose (dev and prod)
 
-## Arquitectura
+## Architecture
 
 ```
 backend/
   app/
-    api/v1/      # Endpoints REST (routers FastAPI)
+    api/v1/      # REST endpoints (FastAPI routers)
     core/        # Config, database, security
     models/      # SQLAlchemy ORM models
     schemas/     # Pydantic schemas (request/response)
-    services/    # Lógica de negocio
-    tasks/       # Tareas Celery (async background)
+    services/    # Business logic
+    tasks/       # Celery tasks (async background)
 frontend/
   src/app/       # Next.js App Router (pages)
-  src/lib/       # Utilidades compartidas
+  src/lib/       # Shared utilities
 ```
 
-## Decisiones Técnicas Importantes
+## Important Technical Decisions
 
-1. **Worker fuera de Docker en Mac**: El puerto 25 (SMTP) está bloqueado en Docker Desktop macOS. Usar `./dev-start.sh` que detecta el OS automáticamente.
+1. **Worker outside Docker on Mac**: Port 25 (SMTP) is blocked in Docker Desktop macOS. Use `./dev-start.sh` which detects the OS automatically.
 
-2. **Configuración por workspace**: Settings dinámicos en tabla `workspace_config_entries` (clave/valor). No requiere migraciones para nuevas opciones.
+2. **Per-workspace configuration**: Dynamic settings in `workspace_config_entries` table (key/value). No migrations needed for new options.
 
-3. **Logs con visibilidad**: `JobLogLine.visibility` puede ser `public` o `superadmin`. Los logs detallados de SMTP son solo para superadmin.
+3. **Logs with visibility**: `JobLogLine.visibility` can be `public` or `superadmin`. Detailed SMTP logs are superadmin only.
 
-4. **Verificación de email**: Flujo MX → SMTP RCPT TO → Catch-all → SPF/DMARC → Web search (opcional).
+4. **Email verification**: Flow MX → SMTP RCPT TO → Catch-all → SPF/DMARC → Web search (optional).
 
-5. **Web search**: Configurable por workspace (Serper.dev o Bing). API key en workspace config, no en .env.
+5. **Web search**: Configurable per workspace (Serper.dev or Bing). API key in workspace config, not in .env.
 
-## Convenciones de Código
+## Code Conventions
 
-- **Idioma código**: Inglés (variables, funciones, clases)
-- **Idioma UI/logs usuario**: Español
-- **Commits**: Conventional Commits en inglés (ver regla `commit-messages.mdc`)
-- **No commits automáticos**: Solo cuando el usuario lo pida explícitamente
+- **Code language**: English (variables, functions, classes)
+- **UI/user logs language**: Based on user locale (i18n)
+- **Commits**: Conventional Commits in English (see `commit-messages.mdc` rule)
+- **No automatic commits**: Only when the user explicitly requests
 
-## Base de Datos
+## No Magic Values
 
-- Migraciones con **Alembic** (prefijo numérico: `001_`, `002_`, etc.)
-- Modelos en `backend/app/models/`
-- Usar `AsyncSession` en endpoints, `Session` sync en tasks Celery
+**Never use magic strings, magic numbers, or hardcoded values directly in code.**
+
+All literal values must be extracted to named constants:
+
+```python
+# ❌ Bad - magic values
+if status == "pending":
+    timeout = 30
+    
+# ✅ Good - named constants
+STATUS_PENDING = "pending"
+DEFAULT_TIMEOUT_SECONDS = 30
+
+if status == STATUS_PENDING:
+    timeout = DEFAULT_TIMEOUT_SECONDS
+```
+
+### Where to Place Constants
+
+| Scope | Location |
+|-------|----------|
+| **Shared across modules** | Global constants file (`backend/app/core/constants.py`, `frontend/src/lib/constants.ts`) |
+| **Used only in one module** | Constants at the top of that specific file |
+| **Domain-specific** | Dedicated file in context folder (e.g., `verification/constants.py`) |
+
+### Examples
+
+```python
+# backend/app/core/constants.py (global)
+HTTP_STATUS_OK = 200
+DEFAULT_PAGE_SIZE = 50
+CACHE_TTL_SECONDS = 3600
+
+# backend/app/services/verification/constants.py (domain)
+SMTP_TIMEOUT_SECONDS = 10
+MAX_RETRY_ATTEMPTS = 3
+VERIFICATION_STATUS_VALID = "valid"
+VERIFICATION_STATUS_INVALID = "invalid"
+
+# In a specific file (local, top of file)
+MAX_BATCH_SIZE = 100  # Only used in this module
+```
+
+### What Counts as Magic Values
+
+- Status strings: `"pending"`, `"completed"`, `"failed"`
+- Numeric limits: `100`, `30`, `3600`
+- Configuration keys: `"smtp_timeout"`, `"api_key"`
+- Error messages (use error codes instead)
+- API endpoints, URLs
+- Regex patterns
+
+## Database
+
+- Migrations with **Alembic** (numeric prefix: `001_`, `002_`, etc.)
+- Models in `backend/app/models/`
+- Use `AsyncSession` in endpoints, sync `Session` in Celery tasks

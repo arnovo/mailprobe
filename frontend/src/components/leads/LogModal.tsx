@@ -2,6 +2,7 @@
 
 import { CancelButton, LogContent, Modal, NavButtons } from '@/components/ui';
 import { useLogModal } from '@/hooks';
+import { useTranslations } from 'next-intl';
 
 interface LogModalProps {
   lead: { id: number; name: string } | null;
@@ -10,7 +11,9 @@ interface LogModalProps {
 }
 
 export function LogModal({ lead, workspaceId, onClose }: LogModalProps) {
+  const tCommon = useTranslations('common');
   const state = useLogModal(lead, workspaceId);
+  const displayError = state.error && state.error.startsWith('errors.') ? tCommon(state.error) : state.error;
 
   const handleClose = () => {
     state.cleanup();
@@ -30,11 +33,12 @@ export function LogModal({ lead, workspaceId, onClose }: LogModalProps) {
     >
       <LogContent
         loading={state.loading}
-        error={state.error}
+        error={displayError}
         status={state.status}
         entries={state.entries}
         lines={state.lines}
-        inProgressMessage="Job en curso. El log se actualizará automáticamente."
+        emptyMessage={tCommon('errors.noLogLines')}
+        inProgressMessage={tCommon('logInProgress')}
       />
     </Modal>
   );

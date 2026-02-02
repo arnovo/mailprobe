@@ -1,4 +1,5 @@
-"""Configuración por workspace: clave-valor (id, workspace_id, clave, valor). Sin migraciones al añadir nuevas claves."""
+"""Per-workspace configuration: key-value (id, workspace_id, key, value). No migrations needed for new keys."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -13,7 +14,7 @@ if TYPE_CHECKING:
 
 
 class WorkspaceConfigEntry(Base):
-    """Un registro de config: clave -> valor por workspace. Valor siempre string (números/JSON serializados)."""
+    """A config record: key -> value per workspace. Value is always string (numbers/JSON serialized)."""
 
     __tablename__ = "workspace_config_entries"
     __table_args__ = (UniqueConstraint("workspace_id", "key", name="uq_workspace_config_workspace_key"),)

@@ -6,28 +6,28 @@ alwaysApply: false
 
 # Testing Patterns
 
-## Regla Obligatoria: Añadir Tests
+## Mandatory Rule: Add Tests
 
-**Cada commit que toque backend DEBE añadir al menos 1 test nuevo.**
+**Every commit that touches backend MUST add at least 1 new test.**
 
-El pre-commit hook bloquea commits si no hay más tests que antes. Esto aplica a:
-- Nuevas funcionalidades → tests que cubran el happy path + edge cases
-- Refactors → tests que verifiquen que el comportamiento no cambió
-- Bug fixes → test que reproduzca el bug (y ahora pasa)
+The pre-commit hook blocks commits if there aren't more tests than before. This applies to:
+- New features → tests covering happy path + edge cases
+- Refactors → tests verifying behavior hasn't changed
+- Bug fixes → test that reproduces the bug (and now passes)
 
-### Excepciones (cómo saltarlo)
+### Exceptions (how to skip)
 
-Solo para cambios que **no afectan lógica**:
-- Typos en mensajes/comentarios
-- Cambios de formato/estilo
-- Actualizaciones de dependencias sin cambios de código
+Only for changes that **don't affect logic**:
+- Typos in messages/comments
+- Format/style changes
+- Dependency updates without code changes
 
 ```bash
-# Saltar SOLO el conteo de tests (el resto de validaciones sigue activo)
-SKIP_TEST_COUNT=1 git commit -m "fix(ui): typo en mensaje de error"
+# Skip ONLY test count verification (other validations remain active)
+SKIP_TEST_COUNT=1 git commit -m "fix(ui): typo in error message"
 ```
 
-**NO uses `--no-verify`** salvo emergencias, ya que salta TODAS las validaciones.
+**DON'T use `--no-verify`** except in emergencies, as it skips ALL validations.
 
 ---
 
@@ -40,31 +40,31 @@ SKIP_TEST_COUNT=1 git commit -m "fix(ui): typo en mensaje de error"
 
 ---
 
-## Ejemplos de Referencia
+## Reference Examples
 
-Usa estos archivos como modelo según el tipo de test que necesites:
+Use these files as templates depending on the test type you need:
 
-### 1. Tests Unitarios Puros → `test_email_patterns.py`
+### 1. Pure Unit Tests → `test_email_patterns.py`
 
 ```python
 # tests/test_email_patterns.py
 class TestGenerateCandidates:
     def test_handles_compound_names(self):
         """Should handle compound first names."""
-        candidates = generate_candidates("Juan Carlos", "García", "example.com")
+        candidates = generate_candidates("John Michael", "Smith", "example.com")
         
         assert len(candidates) > 0
-        assert any("juan" in c for c in candidates)
+        assert any("john" in c for c in candidates)
 ```
 
-**Por qué es bueno:**
-- Sin mocks (funciones puras, sin I/O)
-- Nombres descriptivos (`test_handles_compound_names`)
-- Docstrings que explican el comportamiento esperado
-- Cubre happy path + edge cases (caracteres especiales, espacios, etc.)
-- Estructura con clase que agrupa tests relacionados
+**Why it's good:**
+- No mocks (pure functions, no I/O)
+- Descriptive names (`test_handles_compound_names`)
+- Docstrings explaining expected behavior
+- Covers happy path + edge cases (special chars, spaces, etc.)
+- Class structure grouping related tests
 
-### 2. Tests de Integración con DB/API → `test_leads_flow.py`
+### 2. Integration Tests with DB/API → `test_leads_flow.py`
 
 ```python
 # tests/test_leads_flow.py
@@ -83,20 +83,20 @@ class TestLeadsAPI:
         lead_names = [lead["first_name"] for lead in response.json()["data"]["items"]]
 
         assert "Lead1" in lead_names
-        assert "Lead2" not in lead_names  # Aislamiento!
+        assert "Lead2" not in lead_names  # Isolation!
 ```
 
-**Por qué es bueno:**
-- DB real (no mock) vía fixtures
-- Factories para crear datos: `create_lead`, `create_workspace`
-- Test de seguridad (aislamiento entre workspaces)
-- Fixture reutilizable `auth_setup` con user + token + headers
-- Verifica comportamiento end-to-end
+**Why it's good:**
+- Real DB (not mock) via fixtures
+- Factories for data creation: `create_lead`, `create_workspace`
+- Security test (isolation between workspaces)
+- Reusable fixture `auth_setup` with user + token + headers
+- Verifies end-to-end behavior
 
-### 3. Tests con Mocks de Red → `test_verification_flow.py` + `mocks.py`
+### 3. Tests with Network Mocks → `test_verification_flow.py` + `mocks.py`
 
 ```python
-# tests/mocks.py - Fixtures reutilizables
+# tests/mocks.py - Reusable fixtures
 @pytest.fixture
 def mock_dns_valid(monkeypatch):
     """Mock DNS resolver to return valid MX records."""
@@ -106,7 +106,7 @@ def mock_dns_valid(monkeypatch):
         # ...
     monkeypatch.setattr("dns.resolver.resolve", fake_resolve)
 
-# tests/test_verification_flow.py - Usa los mocks
+# tests/test_verification_flow.py - Uses the mocks
 class TestVerifyEmail:
     def test_valid_email_with_mocked_network(self, mock_dns_valid, mock_smtp_valid):
         """Should validate email with mocked DNS and SMTP."""
@@ -117,12 +117,12 @@ class TestVerifyEmail:
         assert result.smtp_check
 ```
 
-**Por qué es bueno:**
-- Mocks SOLO de I/O externo (DNS, SMTP) - no de lógica interna
-- Clases Fake simples y claras (`FakeSMTP`, `FakeDNSAnswer`)
-- Fixtures reutilizables en `mocks.py`
-- Tests cubren: válido, rechazado, timeout, catch-all, sin MX
-- `pytest_plugins = ["tests.mocks"]` para cargar fixtures
+**Why it's good:**
+- Mocks ONLY external I/O (DNS, SMTP) - not internal logic
+- Simple and clear Fake classes (`FakeSMTP`, `FakeDNSAnswer`)
+- Reusable fixtures in `mocks.py`
+- Tests cover: valid, rejected, timeout, catch-all, no MX
+- `pytest_plugins = ["tests.mocks"]` to load fixtures
 
 ---
 

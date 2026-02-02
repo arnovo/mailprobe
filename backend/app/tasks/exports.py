@@ -1,4 +1,5 @@
 """Celery task: export CSV."""
+
 from __future__ import annotations
 
 import csv
@@ -24,6 +25,7 @@ def run_export_csv(self, workspace_id: int, job_id: str):
     db = get_sync_session()
     try:
         from app.models import Job, Lead
+
         r = db.execute(select(Job).where(Job.job_id == job_id, Job.workspace_id == workspace_id))
         job = r.scalars().one_or_none()
         if not job:
@@ -38,19 +40,39 @@ def run_export_csv(self, workspace_id: int, job_id: str):
         output = io.StringIO()
         writer = csv.writer(output)
         headers = [
-            "id", "first_name", "last_name", "title", "company", "domain", "linkedin_url",
-            "email_best", "verification_status", "confidence_score", "sales_status",
-            "created_at", "updated_at",
+            "id",
+            "first_name",
+            "last_name",
+            "title",
+            "company",
+            "domain",
+            "linkedin_url",
+            "email_best",
+            "verification_status",
+            "confidence_score",
+            "sales_status",
+            "created_at",
+            "updated_at",
         ]
         writer.writerow(headers)
         for lead in leads:
-            writer.writerow([
-                lead.id, lead.first_name, lead.last_name, lead.title, lead.company, lead.domain,
-                lead.linkedin_url, lead.email_best, lead.verification_status, lead.confidence_score,
-                lead.sales_status,
-                lead.created_at.isoformat() if lead.created_at else "",
-                lead.updated_at.isoformat() if lead.updated_at else "",
-            ])
+            writer.writerow(
+                [
+                    lead.id,
+                    lead.first_name,
+                    lead.last_name,
+                    lead.title,
+                    lead.company,
+                    lead.domain,
+                    lead.linkedin_url,
+                    lead.email_best,
+                    lead.verification_status,
+                    lead.confidence_score,
+                    lead.sales_status,
+                    lead.created_at.isoformat() if lead.created_at else "",
+                    lead.updated_at.isoformat() if lead.updated_at else "",
+                ]
+            )
         csv_content = output.getvalue()
 
         job.status = "succeeded"
@@ -59,6 +81,7 @@ def run_export_csv(self, workspace_id: int, job_id: str):
         db.commit()
 
         from app.tasks.webhooks import dispatch_webhook_event
+
         dispatch_webhook_event(workspace_id, "export.completed", {"job_id": job_id, "row_count": len(leads)})
     finally:
         db.close()

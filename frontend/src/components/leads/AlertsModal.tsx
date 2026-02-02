@@ -1,6 +1,7 @@
 'use client';
 
 import { fetchWithAuth } from '@/lib/auth';
+import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -19,6 +20,7 @@ interface AlertsModalProps {
 }
 
 export function AlertsModal({ data, workspaceId, onClose, onSaved }: AlertsModalProps) {
+  const tCommon = useTranslations('common');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [saving, setSaving] = useState(false);
@@ -59,13 +61,13 @@ export function AlertsModal({ data, workspaceId, onClose, onSaved }: AlertsModal
       });
       const result = await res.json();
       if (result.error) {
-        alert(result.error.message || 'Error al guardar');
+        alert(result.error.message || tCommon('errors.save'));
       } else {
         handleClose();
         onSaved();
       }
     } catch {
-      alert('Error de red');
+      alert(tCommon('errors.networkError'));
     } finally {
       setSaving(false);
     }

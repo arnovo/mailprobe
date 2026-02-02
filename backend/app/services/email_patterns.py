@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from app.services.utils import slugify_name
 
-# Patrones estándar (nombre + apellido)
+# Standard patterns (first name + last name)
 COMMON_PATTERNS = [
     "{first}@{domain}",
     "{last}@{domain}",
@@ -18,7 +18,7 @@ COMMON_PATTERNS = [
     "{last}_{first}@{domain}",
 ]
 
-# Patrones para cuando solo hay nombre (sin apellido) - emails genéricos o basados en nombre
+# Patterns for when there's only first name (no last name) - generic or first-name-based emails
 FIRST_ONLY_PATTERNS = [
     "{first}@{domain}",
     "info@{domain}",
@@ -39,10 +39,10 @@ def generate_candidates(
     custom_patterns: list[str] | None = None,
 ) -> list[str]:
     """
-    Genera candidatos de email basados en patrones.
-    enabled_pattern_indices: índices en COMMON_PATTERNS a usar (0..len-1). None = todos.
-    allow_no_lastname: si True y no hay apellido, usa FIRST_ONLY_PATTERNS (info@, contact@, etc.).
-    custom_patterns: patrones adicionales definidos por el workspace (se añaden a los estándar).
+    Generate email candidates based on patterns.
+    enabled_pattern_indices: indices in COMMON_PATTERNS to use (0..len-1). None = all.
+    allow_no_lastname: if True and no last name, use FIRST_ONLY_PATTERNS (info@, contact@, etc.).
+    custom_patterns: additional patterns defined by the workspace (added to standard ones).
     """
     first = slugify_name(first_name)
     last = slugify_name(last_name)
@@ -52,10 +52,10 @@ def generate_candidates(
     f = first[:1] if first else ""
     li = last[:1] if last else ""  # li = last initial
 
-    # Si no hay apellido y está permitido, usar patrones alternativos
+    # If no last name and allowed, use alternative patterns
     if not last:
         if not allow_no_lastname:
-            return []  # No permitido: devolver vacío
+            return []  # Not allowed: return empty
         raw = []
         for pat in FIRST_ONLY_PATTERNS:
             if "{first}" in pat and not first:
@@ -71,12 +71,12 @@ def generate_candidates(
                 break
         return out
 
-    # Patrones normales con nombre y apellido
+    # Normal patterns with first and last name
     patterns = list(COMMON_PATTERNS)
     if enabled_pattern_indices is not None:
         patterns = [COMMON_PATTERNS[i] for i in enabled_pattern_indices if 0 <= i < len(COMMON_PATTERNS)]
 
-    # Añadir patrones personalizados del workspace (si hay)
+    # Add custom patterns from workspace (if any)
     if custom_patterns:
         patterns = patterns + list(custom_patterns)
 
@@ -93,7 +93,7 @@ def generate_candidates(
         try:
             raw.append(pat.format(first=first, last=last, f=f, l=li, domain=domain))
         except KeyError:
-            # Patrón con placeholder desconocido, ignorar
+            # Pattern with unknown placeholder, ignore
             continue
 
     seen = set()

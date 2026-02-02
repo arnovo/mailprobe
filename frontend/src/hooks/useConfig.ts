@@ -4,7 +4,7 @@ import { fetchWithAuth } from '@/lib/auth';
 import { useCallback, useEffect, useState } from 'react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
+const SUCCESS_MESSAGE_DISPLAY_MS = 4000;
 export interface ConfigData {
   smtpTimeout: number;
   dnsTimeout: number;
@@ -65,7 +65,7 @@ export function useConfig({ token, workspaceId }: UseConfigOptions) {
       .then((r) => r.json())
       .then((d) => {
         if (d.error) {
-          setError(d.error.message || 'Error al cargar configuración');
+          setError(d.error.message || 'errors.loadConfig');
           return;
         }
         const c = d.data;
@@ -83,7 +83,7 @@ export function useConfig({ token, workspaceId }: UseConfigOptions) {
         });
         if (provider === 'serper') loadSerperUsage();
       })
-      .catch(() => setError('Error de red'))
+      .catch(() => setError('errors.networkError'))
       .finally(() => setLoading(false));
   }, [token, workspaceId, loadSerperUsage]);
 
@@ -112,13 +112,13 @@ export function useConfig({ token, workspaceId }: UseConfigOptions) {
       });
       const d = await res.json();
       if (d.error) {
-        setError(d.error.message || 'Error al guardar');
+        setError(d.error.message || 'errors.save');
       } else {
         setSuccess('Configuración guardada.');
-        setTimeout(() => setSuccess(null), 4000);
+        setTimeout(() => setSuccess(null), SUCCESS_MESSAGE_DISPLAY_MS);
       }
     } catch {
-      setError('Error de red');
+      setError('errors.networkError');
     } finally {
       setSaving(false);
     }

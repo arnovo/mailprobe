@@ -16,6 +16,7 @@ from app.api.deps import (
     is_superadmin,
     require_scope,
 )
+from app.core.error_codes import ErrorCode
 from app.models import Job, JobLogLine, Lead, User
 from app.schemas.common import APIResponse
 from app.schemas.lead import LeadBulkRequest, LeadCreate, LeadResponse, LeadUpdate
@@ -231,13 +232,13 @@ async def enqueue_verify_lead(
 
     quota_err = await check_verification_quota(db, workspace)
     if quota_err:
-        return APIResponse.err("QUOTA_EXCEEDED", quota_err, {"code": "quota_exceeded"})
+        return APIResponse.err(ErrorCode.QUOTA_VERIFICATIONS_LIMIT.value, quota_err, {"code": "quota_exceeded"})
     r = await db.execute(select(Lead).where(Lead.id == lead_id, Lead.workspace_id == workspace.id))
     lead = r.unique().scalars().one_or_none()
     if not lead:
-        return APIResponse.err("NOT_FOUND", "Lead not found", {"id": lead_id})
+        return APIResponse.err(ErrorCode.LEAD_NOT_FOUND.value, "Lead not found", {"id": lead_id})
     if lead.opt_out:
-        return APIResponse.err("OPT_OUT", "Lead has opted out", {"id": lead_id})
+        return APIResponse.err(ErrorCode.LEAD_OPT_OUT.value, "Lead has opted out", {"id": lead_id})
     job_id = str(uuid.uuid4())
     from app.models import Job
 
@@ -251,7 +252,7 @@ async def enqueue_verify_lead(
 
 
 def _verification_log_entries_filter(rows: list, current_user: User | None) -> tuple[list, list]:
-    """Dado lista de JobLogLine (ordenada por seq), devuelve (log_lines, log_entries) filtrando por visibility: superadmin solo si user es superadmin."""
+    """Given a list of JobLogLine (ordered by seq), returns (log_lines, log_entries) filtering by visibility: superadmin only if user is superadmin."""
     visible = [
         r for r in rows if r.visibility == "public" or (r.visibility == "superadmin" and is_superadmin(current_user))
     ]
@@ -269,7 +270,7 @@ async def get_lead_verification_log(
     workspace_required: tuple = Depends(get_workspace_required),
     current_user: User | None = Depends(get_current_user_optional),
 ) -> APIResponse:
-    """Devuelve el último job de verificación de este lead (job_id, status, log_lines, log_entries con timestamp, created_at, error). Superadmin ve líneas [DEBUG]."""
+    """Returns the last verification job for this lead (job_id, status, log_lines, log_entries with timestamp, created_at, error). Superadmin sees [DEBUG] lines."""
     workspace, _, _ = workspace_required
     r = await db.execute(
         select(Job)
@@ -279,7 +280,9 @@ async def get_lead_verification_log(
     )
     job = r.unique().scalars().one_or_none()
     if not job:
-        return APIResponse.err("NOT_FOUND", "No hay log de verificación para este lead", {"lead_id": lead_id})
+        return APIResponse.err(
+            ErrorCode.LEAD_NO_VERIFICATION_LOG.value, "No verification log for this lead", {"lead_id": lead_id}
+        )
     r2 = await db.execute(select(JobLogLine).where(JobLogLine.job_id == job.id).order_by(JobLogLine.seq))
     rows = r2.unique().scalars().all()
     if rows:
@@ -306,12 +309,12 @@ async def update_lead(
     db: AsyncSession = Depends(get_db),
     workspace_required: tuple = Depends(get_workspace_required),
 ) -> APIResponse:
-    """Actualiza campos del lead (solo los proporcionados, ignora null)."""
+    """Updates lead fields (only provided ones, ignores null)."""
     workspace, _, _ = workspace_required
     r = await db.execute(select(Lead).where(Lead.id == lead_id, Lead.workspace_id == workspace.id))
     lead = r.unique().scalars().one_or_none()
     if not lead:
-        return APIResponse.err("NOT_FOUND", "Lead not found", {"id": lead_id})
+        return APIResponse.err(ErrorCode.LEAD_NOT_FOUND.value, "Lead not found", {"id": lead_id})
     # Actualizar solo campos proporcionados
     if body.first_name is not None:
         lead.first_name = body.first_name.strip()
@@ -347,7 +350,7 @@ async def get_lead(
     r = await db.execute(select(Lead).where(Lead.id == lead_id, Lead.workspace_id == workspace.id))
     lead = r.unique().scalars().one_or_none()
     if not lead:
-        return APIResponse.err("NOT_FOUND", "Lead not found", {"id": lead_id})
+        return APIResponse.err(ErrorCode.LEAD_NOT_FOUND.value, "Lead not found", {"id": lead_id})
     return APIResponse.ok(_lead_to_response(lead))
 
 

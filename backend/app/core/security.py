@@ -1,4 +1,5 @@
 """JWT, API key hashing, password hashing."""
+
 from __future__ import annotations
 
 import hashlib

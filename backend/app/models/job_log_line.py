@@ -1,4 +1,5 @@
-"""Líneas de log de un job (almacenadas en tabla para consulta y auditoría)."""
+"""Job log lines (stored in table for querying and auditing)."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -17,6 +18,6 @@ class JobLogLine(Base):
     seq: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     message: Mapped[str] = mapped_column(Text, nullable=False)
     level: Mapped[str] = mapped_column(Text, nullable=False, default="info")  # info | debug | error
-    # public = visible para cualquier usuario del workspace; superadmin = solo superadmin (logs más detallados/comprometedores)
+    # public = visible to any workspace user; superadmin = superadmin only (more detailed/sensitive logs)
     visibility: Mapped[str] = mapped_column(String(20), nullable=False, default="public")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))

@@ -60,10 +60,10 @@ export function useLeads({ token, workspaceId, page = 1, pageSize = 20 }: UseLea
           setLeads(d.data.items);
         }
         if (d.error) {
-          setError(d.error.message || 'Error al cargar leads');
+          setError(d.error.message || 'errors.loadLeads');
         }
       })
-      .catch(() => setError('Error de red'))
+      .catch(() => setError('errors.networkError'))
       .finally(() => setLoading(false));
   }, [token, workspaceId, page, pageSize]);
 
