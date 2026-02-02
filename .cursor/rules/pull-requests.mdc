@@ -1,5 +1,12 @@
 # Pull Request Standards
 
+## Language
+
+**ALWAYS write PR titles and descriptions in English.** This applies to:
+- PR title
+- PR body/description
+- Commit messages (already enforced by Conventional Commits)
+
 ## Crear PRs
 
 Cuando el usuario pida crear un PR, seguir este flujo:
