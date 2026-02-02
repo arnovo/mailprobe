@@ -1,0 +1,6 @@
+dnspython>=2.6.1
+python-dotenv>=1.0.1
+# Opcional (solo si vas a escribir en Google Sheets):
+google-api-python-client>=2.131.0
+google-auth>=2.30.0
+google-auth-httplib2>=0.2.0

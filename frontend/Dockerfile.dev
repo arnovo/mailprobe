@@ -1,0 +1,6 @@
+# Desarrollo: monta el código con volumen y ejecuta npm run dev (hot reload).
+# Requiere que en el host hayas hecho npm install en ./frontend una vez.
+FROM node:20-alpine
+WORKDIR /app
+EXPOSE 3001
+CMD ["npm", "run", "dev"]

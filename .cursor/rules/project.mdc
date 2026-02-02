@@ -1,0 +1,53 @@
+---
+description: Reglas principales del proyecto Mailprobe
+alwaysApply: true
+---
+
+# Mailprobe - Guía del Proyecto
+
+## Stack Tecnológico
+
+- **Backend**: FastAPI + SQLAlchemy (async) + PostgreSQL + Celery + Redis
+- **Frontend**: Next.js 14 (App Router) + TypeScript + Tailwind CSS
+- **Infraestructura**: Docker Compose (dev y prod)
+
+## Arquitectura
+
+```
+backend/
+  app/
+    api/v1/      # Endpoints REST (routers FastAPI)
+    core/        # Config, database, security
+    models/      # SQLAlchemy ORM models
+    schemas/     # Pydantic schemas (request/response)
+    services/    # Lógica de negocio
+    tasks/       # Tareas Celery (async background)
+frontend/
+  src/app/       # Next.js App Router (pages)
+  src/lib/       # Utilidades compartidas
+```
+
+## Decisiones Técnicas Importantes
+
+1. **Worker fuera de Docker en Mac**: El puerto 25 (SMTP) está bloqueado en Docker Desktop macOS. Usar `./dev-start.sh` que detecta el OS automáticamente.
+
+2. **Configuración por workspace**: Settings dinámicos en tabla `workspace_config_entries` (clave/valor). No requiere migraciones para nuevas opciones.
+
+3. **Logs con visibilidad**: `JobLogLine.visibility` puede ser `public` o `superadmin`. Los logs detallados de SMTP son solo para superadmin.
+
+4. **Verificación de email**: Flujo MX → SMTP RCPT TO → Catch-all → SPF/DMARC → Web search (opcional).
+
+5. **Web search**: Configurable por workspace (Serper.dev o Bing). API key en workspace config, no en .env.
+
+## Convenciones de Código
+
+- **Idioma código**: Inglés (variables, funciones, clases)
+- **Idioma UI/logs usuario**: Español
+- **Commits**: Conventional Commits en inglés (ver regla `commit-messages.mdc`)
+- **No commits automáticos**: Solo cuando el usuario lo pida explícitamente
+
+## Base de Datos
+
+- Migraciones con **Alembic** (prefijo numérico: `001_`, `002_`, etc.)
+- Modelos en `backend/app/models/`
+- Usar `AsyncSession` en endpoints, `Session` sync en tasks Celery

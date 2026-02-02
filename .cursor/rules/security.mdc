@@ -1,0 +1,108 @@
+---
+description: Security best practices for the application
+alwaysApply: true
+---
+
+# Security Guidelines
+
+## Authentication
+
+```python
+# Always verify auth in endpoints
+@router.get("/leads")
+async def list_leads(
+    current_user: User = Depends(get_current_user),  # Required
+    db: AsyncSession = Depends(get_db)
+):
+    # current_user is guaranteed to be authenticated
+    ...
+```
+
+## Authorization (Workspace Isolation)
+
+```python
+# Always filter by workspace
+@router.get("/leads/{id}")
+async def get_lead(
+    id: int,
+    workspace_id: int = Header(..., alias="X-Workspace-Id"),
+    db: AsyncSession = Depends(get_db)
+):
+    lead = await db.execute(
+        select(Lead).where(
+            Lead.id == id,
+            Lead.workspace_id == workspace_id  # Critical!
+        )
+    )
+    ...
+```
+
+## Input Validation
+
+```python
+# ✅ Use Pydantic schemas for all inputs
+class LeadCreate(BaseModel):
+    email: EmailStr  # Validates email format
+    first_name: str = Field(..., min_length=1, max_length=100)
+    
+    @field_validator('email')
+    def lowercase_email(cls, v):
+        return v.lower().strip()
+
+# ❌ Never trust raw input
+lead = Lead(email=request.json['email'])  # Dangerous!
+```
+
+## SQL Injection Prevention
+
+```python
+# ✅ Use SQLAlchemy ORM or parameterized queries
+result = await db.execute(
+    select(Lead).where(Lead.email == email)
+)
+
+# ❌ Never concatenate user input
+query = f"SELECT * FROM leads WHERE email = '{email}'"  # Dangerous!
+```
+
+## Secrets Management
+
+```python
+# ✅ Environment variables for secrets
+DATABASE_URL = os.getenv("DATABASE_URL")
+JWT_SECRET = os.getenv("JWT_SECRET_KEY")
+
+# ✅ Workspace-specific API keys in database (encrypted)
+api_key = get_workspace_config(workspace_id, "serper_api_key")
+
+# ❌ Never hardcode secrets
+JWT_SECRET = "my-super-secret-key"  # Dangerous!
+```
+
+## Sensitive Data in Logs
+
+```python
+# ✅ Mask sensitive data
+logger.info(f"API key: {api_key[:8]}...")
+
+# ❌ Never log full secrets
+logger.info(f"API key: {api_key}")  # Dangerous!
+```
+
+## Rate Limiting
+
+```python
+# API keys have rate limits
+@router.get("/leads")
+async def list_leads(
+    api_key: ApiKey = Depends(get_api_key)
+):
+    if api_key.is_rate_limited():
+        raise HTTPException(429, "Rate limit exceeded")
+```
+
+## Pre-commit Hook Checks
+
+The pre-commit hook automatically:
+- Detects potential secrets in code
+- Blocks commits with API keys, passwords, tokens

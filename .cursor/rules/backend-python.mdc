@@ -1,0 +1,89 @@
+---
+description: Estándares Python para el backend FastAPI
+globs: backend/**/*.py
+alwaysApply: false
+---
+
+# Backend Python - Estándares
+
+## Principios SOLID
+
+1. **Single Responsibility**: Cada módulo/clase tiene una sola razón para cambiar
+   - `services/` = lógica de negocio
+   - `api/v1/` = solo routing y validación HTTP
+   - `models/` = solo definición ORM
+   - `schemas/` = solo validación Pydantic
+
+2. **Open/Closed**: Extender comportamiento sin modificar código existente
+   - Usar configuración por workspace en lugar de hardcodear
+
+3. **Dependency Inversion**: Inyectar dependencias (db session, config)
+
+## Estructura de Archivos
+
+```python
+# api/v1/leads.py - Endpoint
+@router.get("/")
+async def list_leads(db: AsyncSession = Depends(get_db)):
+    ...
+
+# services/verifier.py - Lógica de negocio
+def verify_email(email: str, config: dict) -> VerificationResult:
+    ...
+
+# models/lead.py - Modelo ORM
+class Lead(Base):
+    __tablename__ = "leads"
+    ...
+
+# schemas/lead.py - Validación
+class LeadCreate(BaseModel):
+    ...
+```
+
+## Convenciones de Nombres
+
+- **Archivos**: snake_case (`email_patterns.py`, `workspace_config.py`)
+- **Clases**: PascalCase (`Lead`, `JobLogLine`, `WorkspaceConfigEntry`)
+- **Funciones/variables**: snake_case (`verify_email`, `get_workspace_config`)
+- **Constantes**: UPPER_SNAKE (`CONFIG_KEYS`, `FIRST_ONLY_PATTERNS`)
+
+## Async vs Sync
+
+```python
+# Endpoints FastAPI: SIEMPRE async
+async def get_lead(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Lead))
+
+# Tasks Celery: sync (usa Session, no AsyncSession)
+def verify_lead_task(lead_id: int):
+    with SessionLocal() as db:
+        lead = db.query(Lead).get(lead_id)
+```
+
+## Manejo de Errores
+
+```python
+# ❌ MAL
+try:
+    result = do_something()
+except:
+    pass
+
+# ✅ BIEN
+try:
+    result = do_something()
+except SpecificError as e:
+    logger.error(f"Error en operación: {e}")
+    raise HTTPException(status_code=400, detail=str(e))
+```
+
+## Logging
+
+```python
+# Logs públicos (visibles para el usuario)
+add_log_line(job, "Verificando email...", visibility="public")
+
+# Logs técnicos (solo superadmin)
+add_log_line(job, f"SMTP response: {code}", visibility="superadmin")
+```

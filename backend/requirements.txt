@@ -1,0 +1,41 @@
+# Mailprobe API
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+pydantic[email]>=2.5.0
+pydantic-settings>=2.1.0
+
+# Database
+sqlalchemy[asyncio]>=2.0.25
+asyncpg>=0.29.0
+psycopg2-binary>=2.9.0
+alembic>=1.13.0
+
+# Auth
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+bcrypt==4.0.1
+
+# Celery + Redis
+celery[redis]>=5.3.0
+redis>=5.0.0
+requests>=2.31.0
+
+# Verification (from MVP)
+dnspython>=2.6.1
+
+# Utils
+python-dotenv>=1.0.0
+watchdog>=4.0.0
+python-multipart>=0.0.6
+
+# Tests
+pytest>=7.4.0
+pytest-asyncio>=0.23.0
+httpx>=0.26.0
+factory_boy>=3.3.0
+pytest-mock>=3.12.0
+testcontainers[postgres]>=4.0.0
+aiosqlite>=0.19.0  # Fallback when Docker not available
+
+# Linting
+ruff>=0.4.0

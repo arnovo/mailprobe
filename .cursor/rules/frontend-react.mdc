@@ -1,0 +1,90 @@
+---
+description: Estándares React/Next.js para el frontend
+globs: frontend/**/*.tsx
+alwaysApply: false
+---
+
+# Frontend React/Next.js - Estándares
+
+## Estructura Next.js 14 (App Router)
+
+```
+src/app/
+  layout.tsx          # Layout raíz
+  page.tsx            # Página principal (/)
+  login/page.tsx      # /login
+  dashboard/
+    layout.tsx        # Layout del dashboard
+    page.tsx          # /dashboard (lista de leads)
+    config/page.tsx   # /dashboard/config
+    jobs/page.tsx     # /dashboard/jobs
+```
+
+## Convenciones de Nombres
+
+- **Archivos**: kebab-case para carpetas, `page.tsx` para páginas
+- **Componentes**: PascalCase (`LeadRow`, `AlertModal`)
+- **Hooks**: camelCase con prefijo `use` (`useAuth`, `useFetch`)
+- **Variables de estado**: camelCase (`isLoading`, `selectedLead`)
+
+## Patrones de Componentes
+
+```tsx
+// ✅ Componentes funcionales con tipos
+interface LeadRowProps {
+  lead: Lead;
+  onEdit: (id: number) => void;
+}
+
+export function LeadRow({ lead, onEdit }: LeadRowProps) {
+  return <tr>...</tr>;
+}
+```
+
+## Estado y Fetching
+
+```tsx
+// Estado local con useState
+const [leads, setLeads] = useState<Lead[]>([]);
+const [isLoading, setIsLoading] = useState(true);
+
+// Fetch en useEffect
+useEffect(() => {
+  async function fetchLeads() {
+    const res = await fetch(`${API_URL}/v1/leads`);
+    setLeads(await res.json());
+  }
+  fetchLeads();
+}, []);
+```
+
+## Estilos con Tailwind
+
+```tsx
+// ✅ Clases Tailwind directas
+<button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+
+// ✅ Condicionales con template literals
+<span className={`px-2 py-1 rounded ${
+  status === 'valid' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+}`}>
+```
+
+## API Calls
+
+```tsx
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+// Siempre incluir credentials para auth
+const res = await fetch(`${API_URL}/v1/leads`, {
+  credentials: 'include',
+  headers: { 'Content-Type': 'application/json' },
+});
+```
+
+## UI/UX
+
+- Mostrar estados de carga (`isLoading`)
+- Feedback visual en acciones (botones deshabilitados, spinners)
+- Mensajes de error claros en español
+- Iconos discretos para alertas (ej: ⚠️ para datos faltantes)

@@ -1,0 +1,578 @@
+{
+	"info": {
+		"_postman_id": "mailprobe-001",
+		"name": "Mailprobe API",
+		"description": "Colección para la API v1 de Mailprobe. Base URL: `{{base_url}}`. Auth: Bearer (login) o header `X-API-Key` para automatizaciones.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{ "key": "base_url", "value": "http://localhost:8000" },
+		{ "key": "access_token", "value": "" },
+		{ "key": "workspace_id", "value": "1" },
+		{ "key": "api_key", "value": "" }
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{ "key": "token", "value": "{{access_token}}", "type": "string" }
+		]
+	},
+	"item": [
+		{
+			"name": "Health",
+			"item": [
+				{
+					"name": "Health check",
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "GET",
+						"header": [],
+						"url": "{{base_url}}/health",
+						"description": "Sin autenticación."
+					}
+				}
+			]
+		},
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Register",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200 && pm.response.json().data) {",
+									"    const data = pm.response.json().data;",
+									"    if (data.access_token) pm.collectionVariables.set('access_token', data.access_token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [ { "key": "Content-Type", "value": "application/json" } ],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"changeme\",\n  \"full_name\": \"Admin\"\n}"
+						},
+						"url": "{{base_url}}/v1/auth/register",
+						"description": "Registro de usuario. Guarda access_token en variables si la respuesta es OK."
+					}
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200 && pm.response.json().data) {",
+									"    const data = pm.response.json().data;",
+									"    if (data.access_token) pm.collectionVariables.set('access_token', data.access_token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [ { "key": "Content-Type", "value": "application/json" } ],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"changeme\"\n}"
+						},
+						"url": "{{base_url}}/v1/auth/login",
+						"description": "Login. Guarda access_token en la variable de la colección."
+					}
+				},
+				{
+					"name": "Refresh token",
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [ { "key": "Content-Type", "value": "application/json" } ],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refresh_token\": \"{{access_token}}\"\n}"
+						},
+						"url": "{{base_url}}/v1/auth/refresh",
+						"description": "Pasar el refresh_token (no el access). En producción usar el refresh_token devuelto en login."
+					}
+				},
+				{
+					"name": "Me (perfil)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{base_url}}/v1/auth/me",
+						"description": "Usuario actual (Bearer)."
+					}
+				}
+			]
+		},
+		{
+			"name": "Workspaces",
+			"item": [
+				{
+					"name": "List workspaces",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200 && pm.response.json().data && pm.response.json().data.items && pm.response.json().data.items[0]) {",
+									"    pm.collectionVariables.set('workspace_id', pm.response.json().data.items[0].id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{base_url}}/v1/workspaces",
+						"description": "Solo Bearer. Guarda el primer workspace_id en variable."
+					}
+				}
+			]
+		},
+		{
+			"name": "Leads",
+			"item": [
+				{
+					"name": "Create lead",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "X-Workspace-Id", "value": "{{workspace_id}}", "description": "Solo si usas Bearer; con API Key no hace falta." }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"first_name\": \"Jane\",\n  \"last_name\": \"Doe\",\n  \"company\": \"Acme Inc\",\n  \"domain\": \"acme.com\",\n  \"linkedin_url\": \"\",\n  \"title\": \"CTO\",\n  \"sales_status\": \"New\",\n  \"source\": \"manual\",\n  \"lawful_basis\": \"legitimate_interest\",\n  \"purpose\": \"b2b_sales_outreach\"\n}"
+						},
+						"url": "{{base_url}}/v1/leads",
+						"description": "Crear lead. Opcional: Idempotency-Key."
+					}
+				},
+				{
+					"name": "Bulk upsert leads",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "X-Workspace-Id", "value": "{{workspace_id}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"leads\": [\n    {\n      \"first_name\": \"Jane\",\n      \"last_name\": \"Doe\",\n      \"company\": \"Acme Inc\",\n      \"domain\": \"acme.com\"\n    },\n    {\n      \"first_name\": \"John\",\n      \"last_name\": \"Smith\",\n      \"company\": \"Acme Inc\",\n      \"domain\": \"acme.com\"\n    }\n  ]\n}"
+						},
+						"url": "{{base_url}}/v1/leads/bulk",
+						"description": "Máximo 100 leads por request."
+					}
+				},
+				{
+					"name": "List leads",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "X-Workspace-Id", "value": "{{workspace_id}}" }
+						],
+						"url": {
+							"raw": "{{base_url}}/v1/leads?page=1&page_size=20",
+							"host": [ "{{base_url}}" ],
+							"path": [ "v1", "leads" ],
+							"query": [
+								{ "key": "page", "value": "1" },
+								{ "key": "page_size", "value": "20" },
+								{ "key": "domain", "value": "", "disabled": true },
+								{ "key": "verification_status", "value": "", "disabled": true },
+								{ "key": "sales_status", "value": "", "disabled": true },
+								{ "key": "search", "value": "", "disabled": true }
+							]
+						},
+						"description": "Paginado y filtros opcionales."
+					}
+				},
+				{
+					"name": "Get lead by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "X-Workspace-Id", "value": "{{workspace_id}}" }
+						],
+						"url": {
+							"raw": "{{base_url}}/v1/leads/:lead_id",
+							"host": [ "{{base_url}}" ],
+							"path": [ "v1", "leads", ":lead_id" ],
+							"variable": [ { "key": "lead_id", "value": "1" } ]
+						},
+						"description": "Detalle de un lead por ID."
+					}
+				},
+				{
+					"name": "Update lead",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "X-Workspace-Id", "value": "{{workspace_id}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"first_name\": \"Jane\",\n  \"last_name\": \"Smith\",\n  \"company\": \"Acme Corp\",\n  \"title\": \"CEO\",\n  \"sales_status\": \"Contacted\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/v1/leads/:lead_id",
+							"host": [ "{{base_url}}" ],
+							"path": [ "v1", "leads", ":lead_id" ],
+							"variable": [ { "key": "lead_id", "value": "1" } ]
+						},
+						"description": "Actualiza campos del lead. Todos los campos son opcionales."
+					}
+				},
+				{
+					"name": "Verify lead (async)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "X-Workspace-Id", "value": "{{workspace_id}}" },
+							{ "key": "Idempotency-Key", "value": "", "disabled": true }
+						],
+						"url": {
+							"raw": "{{base_url}}/v1/leads/:lead_id/verify",
+							"host": [ "{{base_url}}" ],
+							"path": [ "v1", "leads", ":lead_id", "verify" ],
+							"variable": [ { "key": "lead_id", "value": "1" } ]
+						},
+						"description": "Encola verificación. Devuelve job_id; consultar GET /v1/jobs/{job_id}."
+					}
+				},
+				{
+					"name": "Get lead verification log",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "X-Workspace-Id", "value": "{{workspace_id}}" }
+						],
+						"url": {
+							"raw": "{{base_url}}/v1/leads/:lead_id/verification-log",
+							"host": [ "{{base_url}}" ],
+							"path": [ "v1", "leads", ":lead_id", "verification-log" ],
+							"variable": [ { "key": "lead_id", "value": "1" } ]
+						},
+						"description": "Último job de verificación de este lead: job_id, status, log_lines, created_at, error."
+					}
+				}
+			]
+		},
+		{
+			"name": "Verify (stateless)",
+			"item": [
+				{
+					"name": "Verify email (first + last + domain)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "X-Workspace-Id", "value": "{{workspace_id}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"first_name\": \"Jane\",\n  \"last_name\": \"Doe\",\n  \"domain\": \"acme.com\"\n}"
+						},
+						"url": "{{base_url}}/v1/verify",
+						"description": "Verificación síncrona: devuelve candidatos y mejor email."
+					}
+				}
+			]
+		},
+		{
+			"name": "Config",
+			"item": [
+				{
+					"name": "Get workspace config",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "X-Workspace-Id", "value": "{{workspace_id}}" }
+						],
+						"url": "{{base_url}}/v1/config",
+						"description": "Configuración del workspace: timeouts, patrones de email, búsqueda web, etc."
+					}
+				},
+				{
+					"name": "Update workspace config",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "X-Workspace-Id", "value": "{{workspace_id}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"smtp_timeout_seconds\": 5,\n  \"dns_timeout_seconds\": 5,\n  \"enabled_pattern_indices\": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],\n  \"web_search_provider\": \"\",\n  \"web_search_api_key\": \"\",\n  \"allow_no_lastname\": false,\n  \"custom_patterns\": []\n}"
+						},
+						"url": "{{base_url}}/v1/config",
+						"description": "Actualiza configuración. Campos opcionales; null = usar valor global."
+					}
+				},
+				{
+					"name": "Get Serper usage",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "X-Workspace-Id", "value": "{{workspace_id}}" }
+						],
+						"url": "{{base_url}}/v1/config/serper-usage",
+						"description": "Uso de Serper.dev (búsqueda web) para el workspace."
+					}
+				}
+			]
+		},
+		{
+			"name": "Jobs",
+			"item": [
+				{
+					"name": "List jobs",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "X-Workspace-Id", "value": "{{workspace_id}}" }
+						],
+						"url": {
+							"raw": "{{base_url}}/v1/jobs?active_only=false",
+							"host": [ "{{base_url}}" ],
+							"path": [ "v1", "jobs" ],
+							"query": [
+								{ "key": "active_only", "value": "false", "description": "true = solo queued/running" }
+							]
+						},
+						"description": "Lista todos los jobs del workspace."
+					}
+				},
+				{
+					"name": "Get job status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "X-Workspace-Id", "value": "{{workspace_id}}" }
+						],
+						"url": {
+							"raw": "{{base_url}}/v1/jobs/:job_id",
+							"host": [ "{{base_url}}" ],
+							"path": [ "v1", "jobs", ":job_id" ],
+							"variable": [ { "key": "job_id", "value": "" } ]
+						},
+						"description": "Estado de un job: status, progress, result, log_lines, error."
+					}
+				},
+				{
+					"name": "Cancel job (superadmin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "X-Workspace-Id", "value": "{{workspace_id}}" }
+						],
+						"url": {
+							"raw": "{{base_url}}/v1/jobs/:job_id/cancel",
+							"host": [ "{{base_url}}" ],
+							"path": [ "v1", "jobs", ":job_id", "cancel" ],
+							"variable": [ { "key": "job_id", "value": "" } ]
+						},
+						"description": "Cancela un job en estado queued/running. Requiere superadmin."
+					}
+				}
+			]
+		},
+		{
+			"name": "Opt-out",
+			"item": [
+				{
+					"name": "Opt-out (lead_id, email o domain)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "X-Workspace-Id", "value": "{{workspace_id}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"lead_id\": null,\n  \"email\": \"user@example.com\",\n  \"domain\": null,\n  \"reason\": \"Solicitud del interesado\"\n}"
+						},
+						"url": "{{base_url}}/v1/optout",
+						"description": "Indicar solo uno: lead_id, email o domain."
+					}
+				}
+			]
+		},
+		{
+			"name": "Exports",
+			"item": [
+				{
+					"name": "Export CSV (async)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "X-Workspace-Id", "value": "{{workspace_id}}" },
+							{ "key": "Idempotency-Key", "value": "", "disabled": true }
+						],
+						"url": "{{base_url}}/v1/exports/csv",
+						"description": "Devuelve job_id. Poll GET /v1/jobs/{job_id} para descarga."
+					}
+				}
+			]
+		},
+		{
+			"name": "Webhooks",
+			"item": [
+				{
+					"name": "Test webhook",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "X-Workspace-Id", "value": "{{workspace_id}}" }
+						],
+						"url": "{{base_url}}/v1/webhooks/test",
+						"description": "Prueba de webhook."
+					}
+				},
+				{
+					"name": "Create webhook",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "X-Workspace-Id", "value": "{{workspace_id}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"url\": \"https://your-server.com/webhook\",\n  \"events\": [\"lead.created\", \"verification.completed\"]\n}"
+						},
+						"url": "{{base_url}}/v1/webhooks",
+						"description": "Registra URL y eventos. La respuesta incluye secret (guardar)."
+					}
+				},
+				{
+					"name": "List webhooks",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "X-Workspace-Id", "value": "{{workspace_id}}" }
+						],
+						"url": "{{base_url}}/v1/webhooks",
+						"description": "Lista webhooks del workspace."
+					}
+				}
+			]
+		},
+		{
+			"name": "Usage",
+			"item": [
+				{
+					"name": "Get usage",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "X-Workspace-Id", "value": "{{workspace_id}}" }
+						],
+						"url": "{{base_url}}/v1/usage",
+						"description": "Uso del periodo (verificaciones, exports, plan)."
+					}
+				}
+			]
+		},
+		{
+			"name": "API Keys",
+			"item": [
+				{
+					"name": "Create API key",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "X-Workspace-Id", "value": "{{workspace_id}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"n8n / integración\",\n  \"scopes\": [\"leads:read\", \"leads:write\", \"verify:run\", \"exports:run\", \"optout:write\", \"webhooks:write\"]\n}"
+						},
+						"url": "{{base_url}}/v1/api-keys",
+						"description": "La clave completa (key) solo se devuelve una vez. Guardar en {{api_key}}."
+					}
+				},
+				{
+					"name": "List API keys",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "X-Workspace-Id", "value": "{{workspace_id}}" }
+						],
+						"url": "{{base_url}}/v1/api-keys",
+						"description": "Lista claves (sin el secret)."
+					}
+				},
+				{
+					"name": "Revoke API key",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{ "key": "X-Workspace-Id", "value": "{{workspace_id}}" }
+						],
+						"url": {
+							"raw": "{{base_url}}/v1/api-keys/:key_id",
+							"host": [ "{{base_url}}" ],
+							"path": [ "v1", "api-keys", ":key_id" ],
+							"variable": [ { "key": "key_id", "value": "1" } ]
+						},
+						"description": "Sustituir key_id por el ID de la API key."
+					}
+				}
+			]
+		},
+		{
+			"name": "Auth con API Key",
+			"item": [
+				{
+					"name": "List leads (API Key)",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [
+							{ "key": "X-API-Key", "value": "{{api_key}}", "description": "Clave completa ef_xxx.secret" }
+						],
+						"url": "{{base_url}}/v1/leads?page=1&page_size=20",
+						"description": "Con API Key no se usa X-Workspace-Id (el workspace viene de la clave)."
+					}
+				},
+				{
+					"name": "Verify stateless (API Key)",
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "X-API-Key", "value": "{{api_key}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"first_name\": \"Jane\",\n  \"last_name\": \"Doe\",\n  \"domain\": \"acme.com\"\n}"
+						},
+						"url": "{{base_url}}/v1/verify",
+						"description": "Verificación con API Key (scope verify:run)."
+					}
+				}
+			]
+		}
+	]
+}

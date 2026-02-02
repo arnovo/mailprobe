@@ -1,0 +1,102 @@
+---
+description: Standard API response format for all endpoints
+globs: backend/app/api/**/*.py
+alwaysApply: false
+---
+
+# API Response Format
+
+## Standard Structure
+
+All API responses follow this format:
+
+```json
+{
+  "data": { ... },      // Success payload (null on error)
+  "error": null,        // Error object (null on success)
+  "meta": { ... }       // Optional: pagination, timing, etc.
+}
+```
+
+## Success Response
+
+```python
+@router.get("/leads")
+async def list_leads(db: AsyncSession = Depends(get_db)):
+    leads = await get_leads(db)
+    return {
+        "data": {
+            "items": [lead.to_dict() for lead in leads],
+            "total": len(leads)
+        },
+        "error": None
+    }
+```
+
+## Error Response
+
+```python
+@router.get("/leads/{id}")
+async def get_lead(id: int, db: AsyncSession = Depends(get_db)):
+    lead = await db.get(Lead, id)
+    if not lead:
+        return JSONResponse(
+            status_code=404,
+            content={
+                "data": None,
+                "error": {
+                    "code": "NOT_FOUND",
+                    "message": "Lead not found"
+                }
+            }
+        )
+    return {"data": lead.to_dict(), "error": None}
+```
+
+## Pagination
+
+```python
+@router.get("/leads")
+async def list_leads(
+    page: int = 1,
+    per_page: int = 20,
+    db: AsyncSession = Depends(get_db)
+):
+    items, total = await paginate_leads(db, page, per_page)
+    return {
+        "data": {"items": items},
+        "error": None,
+        "meta": {
+            "page": page,
+            "per_page": per_page,
+            "total": total,
+            "pages": (total + per_page - 1) // per_page
+        }
+    }
+```
+
+## Error Codes
+
+| Code | HTTP Status | Use for |
+|------|-------------|---------|
+| `VALIDATION_ERROR` | 400 | Invalid input |
+| `UNAUTHORIZED` | 401 | Missing/invalid auth |
+| `FORBIDDEN` | 403 | No permission |
+| `NOT_FOUND` | 404 | Resource not found |
+| `CONFLICT` | 409 | Duplicate, already exists |
+| `RATE_LIMITED` | 429 | Too many requests |
+| `INTERNAL_ERROR` | 500 | Unexpected server error |
+
+## Frontend Handling
+
+```typescript
+const res = await fetch(`${API_URL}/v1/leads`);
+const json = await res.json();
+
+if (json.error) {
+  setError(json.error.message);
+  return;
+}
+
+setLeads(json.data.items);
+```

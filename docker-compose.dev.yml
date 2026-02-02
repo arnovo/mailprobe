@@ -1,0 +1,45 @@
+# Desarrollo con hot reload.
+# Mac: Worker corre FUERA de Docker (puerto 25 bloqueado en Docker).
+# Linux: Todo corre en Docker (usar --profile linux para incluir worker).
+# Uso: ./dev-start.sh
+# Frontend en http://localhost:3002, API en http://localhost:8000.
+
+services:
+  backend:
+    volumes:
+      - ./backend:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Worker: en Mac corre fuera de Docker; en Linux se activa con --profile linux
+  worker:
+    profiles:
+      - linux  # Solo arranca con --profile linux (para servidores Linux)
+    volumes:
+      - ./backend:/app
+    command: ["/usr/local/bin/watchmedo", "auto-restart", "--directory=/app", "--pattern=*.py", "--recursive", "--", "celery", "-A", "app.tasks.celery_app", "worker", "-l", "info"]
+
+  beat:
+    volumes:
+      - ./backend:/app
+    command: ["/usr/local/bin/watchmedo", "auto-restart", "--directory=/app", "--pattern=*.py", "--recursive", "--", "celery", "-A", "app.tasks.celery_app", "beat", "-l", "info"]
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./frontend:/app
+      # Cache de Next/webpack en volumen para evitar ENOENT/rename en montaje del host
+      - frontend_next:/app/.next
+      - frontend_node_modules:/app/node_modules
+    ports:
+      - "3002:3001"
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    # Instala deps (si hace falta) y arranca dev con hot reload en 0.0.0.0
+    command: ["sh", "-c", "npm install --include=dev && npm run dev -- -H 0.0.0.0"]
+
+volumes:
+  frontend_node_modules:
+  frontend_next:

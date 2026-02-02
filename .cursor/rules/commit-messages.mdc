@@ -1,0 +1,58 @@
+---
+description: Conventional Commits format for all git commits
+alwaysApply: true
+---
+
+# Commit Message Convention
+
+Follow **Conventional Commits** for all git commits.
+
+## Format
+
+```
+<type>(<scope>): <description>
+
+[optional body]
+
+[optional footer]
+```
+
+## Types
+
+| Type | Use for |
+|------|---------|
+| `feat` | New feature |
+| `fix` | Bug fix |
+| `docs` | Documentation only |
+| `style` | Formatting, no code change |
+| `refactor` | Code change, no feature/fix |
+| `perf` | Performance improvement |
+| `test` | Adding/fixing tests |
+| `build` | Build system, dependencies |
+| `ci` | CI/CD changes |
+| `chore` | Maintenance tasks |
+
+## Rules
+
+1. **Language**: Always write in English
+2. **Required**: `type` and `description`
+3. **Optional**: `scope` (recommended for clarity)
+4. **Case**: Description in lowercase, no period at end
+5. **Length**: Max 72 chars on first line
+6. **Breaking changes**: Add `!` after scope or `BREAKING CHANGE:` in footer
+
+## Examples
+
+```
+feat(auth): add JWT refresh token support
+fix(leads): resolve duplicate email detection
+refactor(hooks): extract useJobLog from useLogModal
+build(deps): upgrade eslint to v9
+test(api): add verification endpoint tests
+```
+
+## Scopes for this project
+
+- `auth`, `leads`, `jobs`, `exports`, `webhooks`, `api-keys`, `config`
+- `hooks`, `components`, `ui`, `types`
+- `deps`, `docker`, `ci`

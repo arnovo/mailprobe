@@ -1,0 +1,26 @@
+{
+  "name": "mailprobe-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3001",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "next": "^16.1.6",
+    "next-auth": "^4.24.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "swr": "^2.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "20.19.30",
+    "@types/react": "18.3.27",
+    "@types/react-dom": "^18.2.0",
+    "eslint": "^9.39.2",
+    "eslint-config-next": "^16.1.6",
+    "typescript": "5.9.3"
+  }
+}

@@ -1,0 +1,109 @@
+---
+description: Testing patterns for backend Python tests
+globs: backend/tests/**/*.py
+alwaysApply: false
+---
+
+# Testing Patterns
+
+## Principles
+
+1. **Minimal mocking**: Only mock external I/O (network, SMTP, external APIs)
+2. **Real database**: PostgreSQL via testcontainers (SQLite fallback if Docker unavailable)
+3. **Factories with Faker**: Generate random realistic test data
+4. **Test behavior, not implementation**: Focus on inputs/outputs
+
+## Test Structure
+
+```python
+# tests/test_leads.py
+import pytest
+from tests.factories import LeadFactory
+
+class TestLeadVerification:
+    """Group related tests in classes"""
+    
+    def test_verify_valid_email(self, db_session):
+        lead = LeadFactory(email="test@example.com")
+        result = verify_lead(lead.id, db_session)
+        assert result.status == "valid"
+    
+    def test_verify_invalid_domain(self, db_session):
+        lead = LeadFactory(email="test@nonexistent.invalid")
+        result = verify_lead(lead.id, db_session)
+        assert result.status == "invalid"
+```
+
+## Factories
+
+```python
+# tests/factories.py
+import factory
+from faker import Faker
+from app.models import Lead, Workspace
+
+fake = Faker()
+
+class WorkspaceFactory(factory.Factory):
+    class Meta:
+        model = Workspace
+    
+    name = factory.LazyAttribute(lambda _: fake.company())
+
+class LeadFactory(factory.Factory):
+    class Meta:
+        model = Lead
+    
+    first_name = factory.LazyAttribute(lambda _: fake.first_name())
+    last_name = factory.LazyAttribute(lambda _: fake.last_name())
+    email = factory.LazyAttribute(lambda _: fake.email())
+    workspace = factory.SubFactory(WorkspaceFactory)
+```
+
+## Fixtures
+
+```python
+# tests/conftest.py uses testcontainers for PostgreSQL
+# Automatically uses PostgreSQL if Docker is running, else SQLite fallback
+
+@pytest.fixture
+def db_session(db_engine):
+    """Async database session (PostgreSQL or SQLite)"""
+    # Provided by conftest.py - uses testcontainers when Docker available
+
+@pytest.fixture
+def mock_smtp(mocker):
+    """Mock SMTP connections"""
+    return mocker.patch("app.services.smtp.smtplib.SMTP")
+```
+
+## What to Mock
+
+```python
+# ✅ Mock external services
+mock_smtp = mocker.patch("smtplib.SMTP")
+mock_dns = mocker.patch("dns.resolver.resolve")
+mock_requests = mocker.patch("requests.get")
+
+# ❌ Don't mock internal logic
+# Don't mock: database queries, business logic, utils
+```
+
+## Running Tests
+
+```bash
+# All tests (auto-detects Docker for PostgreSQL)
+pytest tests/ -v
+
+# Force PostgreSQL (requires Docker running)
+TEST_USE_POSTGRES=1 pytest tests/ -v
+
+# Specific file
+pytest tests/test_leads.py -v
+
+# Stop on first failure
+pytest tests/ -x
+
+# With coverage
+pytest tests/ --cov=app --cov-report=term-missing
+```
