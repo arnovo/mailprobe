@@ -3,6 +3,14 @@ name: Tests
 on:
   pull_request:
     branches: [main, develop]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.cursor/**'
+      - 'postman/**'
+      - 'examples/**'
+      - '.gitignore'
+      - 'LICENSE'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
