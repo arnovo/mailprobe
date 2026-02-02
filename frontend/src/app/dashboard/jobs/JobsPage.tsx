@@ -5,9 +5,9 @@
  * Refactored to use modular components and custom hooks.
  */
 
-import { useTranslations } from 'next-intl';
 import { JobLogModal, JobsTable } from '@/components/jobs';
 import { Job, useAuth, useJobs } from '@/hooks';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
 export function JobsPage() {

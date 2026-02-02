@@ -4,9 +4,9 @@
  * Usage page: GET /v1/usage to see verifications used/limit, exports and workspace plan.
  */
 
+import { fetchWithAuth, getAccessToken } from '@/lib/auth';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
-import { getAccessToken, fetchWithAuth } from '@/lib/auth';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 

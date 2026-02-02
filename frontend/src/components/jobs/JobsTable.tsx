@@ -1,7 +1,7 @@
 'use client';
 
-import { Job } from '@/hooks/useJobs';
 import { JobStatusBadge } from '@/components/ui';
+import { Job } from '@/hooks/useJobs';
 
 const JOB_ID_DISPLAY_LENGTH = 8;
 

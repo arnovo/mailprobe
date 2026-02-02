@@ -5,11 +5,11 @@
  * Refactored to use modular components and custom hooks.
  */
 
-import { useState } from 'react';
-import { useTranslations } from 'next-intl';
-import { useAuth, useLeads, useVerification, Lead } from '@/hooks';
+import { AlertsModal, LeadsTable, LogModal } from '@/components/leads';
 import { TerminalLog } from '@/components/ui';
-import { LeadsTable, LogModal, AlertsModal } from '@/components/leads';
+import { Lead, useAuth, useLeads, useVerification } from '@/hooks';
+import { useTranslations } from 'next-intl';
+import { useState } from 'react';
 
 interface AlertsData {
   leadId: number;

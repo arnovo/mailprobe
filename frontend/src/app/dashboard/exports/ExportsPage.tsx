@@ -5,8 +5,8 @@
  * check status with GET /v1/jobs/{job_id} and download CSV when status === succeeded.
  */
 
-import { useTranslations } from 'next-intl';
 import { fetchWithAuth, getAccessToken } from '@/lib/auth';
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';

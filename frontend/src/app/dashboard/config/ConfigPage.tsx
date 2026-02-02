@@ -5,9 +5,9 @@
  * Refactored to use modular components and custom hooks.
  */
 
-import { useTranslations } from 'next-intl';
 import { PatternSettings, TimeoutSettings, WebSearchSettings } from '@/components/config';
 import { CONFIG_CONSTANTS, useAuth, useConfig } from '@/hooks';
+import { useTranslations } from 'next-intl';
 
 const { MIN_TIMEOUT, MAX_TIMEOUT, MIN_PATTERNS } = CONFIG_CONSTANTS;
 

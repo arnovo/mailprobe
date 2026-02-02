@@ -5,8 +5,8 @@
  * POST /v1/webhooks returns the secret for signing; it's not shown again.
  */
 
-import { useTranslations } from 'next-intl';
 import { fetchWithAuth, getAccessToken } from '@/lib/auth';
+import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';

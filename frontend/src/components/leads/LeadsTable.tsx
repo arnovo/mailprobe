@@ -1,8 +1,8 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
 import { JobStatusBadge, SignalsBadges, VerificationStatusBadge } from '@/components/ui';
 import { Lead } from '@/hooks/useLeads';
+import { useTranslations } from 'next-intl';
 
 interface LeadsTableProps {
   leads: Lead[];
