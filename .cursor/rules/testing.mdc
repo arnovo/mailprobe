@@ -1,6 +1,6 @@
 ---
-description: Testing patterns for backend Python tests
-globs: backend/tests/**/*.py
+description: Testing patterns for backend Python and frontend TypeScript/React tests
+globs: backend/tests/**/*.py, frontend/src/**/*.test.{ts,tsx}, frontend/src/__tests__/**
 alwaysApply: false
 ---
 
@@ -219,4 +219,87 @@ pytest tests/ -x
 
 # With coverage
 pytest tests/ --cov=app --cov-report=term-missing
+```
+
+---
+
+## Frontend (TypeScript / React)
+
+### Tools
+
+- **Vitest** – test runner (compatible with Vite/Next.js)
+- **React Testing Library (RTL)** – render components, query by role/label, user events
+- **@faker-js/faker** – random test data in factories
+
+### Principles
+
+1. **Mock only**: `fetch` (or `fetchWithAuth`), `next/navigation` (e.g. `useRouter`), `next-intl` (e.g. `useTranslations`). Avoid mocking internal modules.
+2. **Factories with Faker**: Use `createLead(overrides)`, `createJob(overrides)` in `src/__tests__/factories/` so tests stay readable and data is realistic.
+3. **Test behavior, not implementation**: Assert visible text, user-visible state, and outcomes (e.g. cookie set, `router.refresh()` called), not internal state or class names.
+
+### Structure
+
+```
+frontend/src/__tests__/
+  setup.ts           # e.g. import '@testing-library/jest-dom'
+  sanity.test.ts     # trivial sanity test
+  factories/
+    lead.ts          # createLead(overrides?)
+    job.ts           # createJob(overrides?)
+  unit/
+    lib/
+      auth.test.ts   # getAccessToken, fetchWithAuth, etc.
+  components/
+    VerificationStatusBadge.test.tsx
+    TerminalLog.test.tsx
+    LanguageSwitcher.test.tsx
+  hooks/
+    useLeads.test.tsx  # wrapper component + mocked fetchWithAuth
+```
+
+Frontend tests live under `frontend/src/**/*.test.{ts,tsx}` or `frontend/src/__tests__/**`.
+
+### Example: Component test (RTL)
+
+```tsx
+// src/__tests__/components/VerificationStatusBadge.test.tsx
+import { render, screen } from '@testing-library/react';
+import { VerificationStatusBadge } from '@/components/ui/VerificationStatusBadge';
+
+vi.mock('next-intl', () => ({ useTranslations: () => (key: string) => key }));
+
+it('renders valid status', () => {
+  render(<VerificationStatusBadge status="valid" />);
+  expect(screen.getByText(/status\.valid/)).toBeInTheDocument();
+});
+```
+
+### Example: Hook test (mocked fetch)
+
+```tsx
+// src/__tests__/hooks/useLeads.test.tsx
+vi.mock('@/lib/auth', () => ({ fetchWithAuth: vi.fn() }));
+
+function TestWrapper() {
+  const { leads, loading, error } = useLeads({ token: 't', workspaceId: 'w' });
+  if (loading) return <span data-testid="loading">Loading</span>;
+  return <ul data-testid="leads">{leads.map(l => <li key={l.id}>{l.email_best}</li>)}</ul>;
+}
+
+it('loads leads', async () => {
+  vi.mocked(fetchWithAuth).mockResolvedValue(
+    new Response(JSON.stringify({ data: { items: [createLead()] } }))
+  );
+  render(<TestWrapper />);
+  await waitFor(() => expect(screen.getByTestId('leads')).toBeInTheDocument());
+  expect(screen.getByText(createLead().email_best)).toBeInTheDocument();
+});
+```
+
+### Commands
+
+```bash
+cd frontend
+npm run test        # run once (CI)
+npm run test:watch  # watch mode (development)
 ```
