@@ -36,7 +36,20 @@ async def verify_stateless(
             email=best_result.email,
             status=best_result.status,
             confidence_score=best_result.confidence_score,
+            # DNS signals
+            mx_found=best_result.mx_found,
+            spf_present=getattr(best_result, "spf_present", False),
+            dmarc_present=getattr(best_result, "dmarc_present", False),
+            # SMTP signals
+            catch_all=getattr(best_result, "catch_all", None),
+            smtp_attempted=getattr(best_result, "smtp_attempted", False),
+            smtp_blocked=getattr(best_result, "smtp_blocked", False),
+            # Additional signals
+            provider=getattr(best_result, "provider", "other"),
             web_mentioned=getattr(best_result, "web_mentioned", False),
+            # Summary
+            signals=getattr(best_result, "signals", []),
+            reason=best_result.reason,
         )
     return APIResponse.ok(VerifyStatelessResponse(
         candidates=candidates,
