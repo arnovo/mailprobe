@@ -51,7 +51,7 @@ export function ConfigPage() {
         {t('timeouts')}: {MIN_TIMEOUT}–{MAX_TIMEOUT}s. Min {MIN_PATTERNS} {t('patterns').toLowerCase()}.
       </p>
 
-      {error && <p style={{ color: '#f87171', marginBottom: '0.5rem' }}>{error}</p>}
+      {error && <p style={{ color: '#f87171', marginBottom: '0.5rem' }}>{error.startsWith('errors.') ? tCommon(error) : error}</p>}
       {success && <p style={{ color: '#4ade80', marginBottom: '0.5rem' }}>{t('saved')}</p>}
 
       {loading ? (

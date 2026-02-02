@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, get_workspace_required, require_scope
+from app.core.error_codes import ErrorCode
 from app.models import Lead, OptOut
 from app.schemas.common import APIResponse
 from app.schemas.optout import OptOutRequest
@@ -28,7 +29,7 @@ async def opt_out(
         r = await db.execute(select(Lead).where(Lead.id == body.lead_id, Lead.workspace_id == workspace.id))
         lead = r.unique().scalars().one_or_none()
         if not lead:
-            return APIResponse.err("NOT_FOUND", "Lead not found", {"id": body.lead_id})
+            return APIResponse.err(ErrorCode.LEAD_NOT_FOUND.value, "Lead not found", {"id": body.lead_id})
         lead.opt_out = True
         lead.opt_out_at = now
         email = lead.email_best or ""
@@ -54,6 +55,6 @@ async def opt_out(
             lead.opt_out = True
             lead.opt_out_at = now
     else:
-        return APIResponse.err("VALIDATION_ERROR", "Provide lead_id, email, or domain", {})
+        return APIResponse.err(ErrorCode.VALIDATION_REQUIRED_FIELD.value, "Provide lead_id, email, or domain", {})
     await db.commit()
     return APIResponse.ok({"ok": True, "message": "Opt-out recorded"})

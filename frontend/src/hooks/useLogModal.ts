@@ -51,7 +51,7 @@ export function useLogModal(lead: { id: number } | null, workspaceId: string): U
       .then((d) => {
         setInitialLoading(false);
         if (d.error) {
-          setInitialError(d.error.message || 'No hay log');
+          setInitialError(d.error.message || 'errors.noLog');
           return;
         }
         if (d.data?.job_id) {
@@ -60,7 +60,7 @@ export function useLogModal(lead: { id: number } | null, workspaceId: string): U
       })
       .catch(() => {
         setInitialLoading(false);
-        setInitialError('Error de red');
+        setInitialError('errors.networkError');
       });
   }, [workspaceId]);
 
@@ -91,10 +91,10 @@ export function useLogModal(lead: { id: number } | null, workspaceId: string): U
     fetchWithAuth(`${API_URL}/v1/jobs/${currentJobId}/cancel`, { method: 'POST', headers: { 'X-Workspace-Id': workspaceId } })
       .then((r) => r.json())
       .then((d) => {
-        if (d.error) setInitialError(d.error.message || 'No se pudo cancelar');
+        if (d.error) setInitialError(d.error.message || 'errors.cancelFailed');
         else jobLog.refetch();
       })
-      .catch(() => setInitialError('Error de red'))
+      .catch(() => setInitialError('errors.networkError'))
       .finally(() => setCancelling(false));
   }, [currentJobId, workspaceId, jobLog]);
 

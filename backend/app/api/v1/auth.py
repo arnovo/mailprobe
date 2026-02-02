@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db
 from app.core.config import settings
+from app.core.error_codes import ErrorCode
 from app.core.security import create_access_token, create_refresh_token, decode_token, hash_password
 from app.models import User
 from app.schemas.auth import UserCreate, UserLogin, UserResponse
@@ -28,7 +29,7 @@ async def register(
 ) -> APIResponse:
     result = await db.execute(select(User).where(User.email == body.email))
     if result.unique().scalars().one_or_none():
-        return APIResponse.err("EMAIL_EXISTS", "Email already registered", {"email": body.email})
+        return APIResponse.err(ErrorCode.AUTH_EMAIL_EXISTS.value, "Email already registered", {"email": body.email})
     user = User(
         email=body.email,
         hashed_password=hash_password(body.password),
@@ -60,9 +61,9 @@ async def login(
     from app.core.security import verify_password
 
     if not user or not verify_password(body.password, user.hashed_password):
-        return APIResponse.err("INVALID_CREDENTIALS", "Invalid email or password")
+        return APIResponse.err(ErrorCode.AUTH_INVALID_CREDENTIALS.value, "Invalid email or password")
     if not user.is_active:
-        return APIResponse.err("USER_DISABLED", "Account is disabled")
+        return APIResponse.err(ErrorCode.AUTH_USER_DISABLED.value, "Account is disabled")
     access = create_access_token(user.id)
     refresh = create_refresh_token(user.id)
     return APIResponse.ok(
@@ -83,14 +84,14 @@ async def refresh(
 ) -> APIResponse:
     payload = decode_token(body.refresh_token)
     if not payload or payload.get("type") != "refresh":
-        return APIResponse.err("INVALID_TOKEN", "Invalid or expired refresh token")
+        return APIResponse.err(ErrorCode.AUTH_INVALID_TOKEN.value, "Invalid or expired refresh token")
     sub = payload.get("sub")
     if not sub:
-        return APIResponse.err("INVALID_TOKEN", "Invalid refresh token")
+        return APIResponse.err(ErrorCode.AUTH_INVALID_TOKEN.value, "Invalid refresh token")
     result = await db.execute(select(User).where(User.id == int(sub), User.is_active.is_(True)))
     user = result.unique().scalars().one_or_none()
     if not user:
-        return APIResponse.err("USER_NOT_FOUND", "User not found")
+        return APIResponse.err(ErrorCode.AUTH_USER_NOT_FOUND.value, "User not found")
     access = create_access_token(user.id)
     new_refresh = create_refresh_token(user.id)
     return APIResponse.ok(

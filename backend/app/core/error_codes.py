@@ -54,7 +54,7 @@ class ErrorCode(str, Enum):
 
     # Verification errors (VERIFY_*)
     VERIFY_INVALID_EMAIL = "VERIFY_INVALID_EMAIL"
-    VERIFY_INVALID_DOMAIN = "VERIFY_DOMAIN_NOT_FOUND"
+    VERIFY_DOMAIN_NOT_FOUND = "VERIFY_DOMAIN_NOT_FOUND"
     VERIFY_SMTP_BLOCKED = "VERIFY_SMTP_BLOCKED"
     VERIFY_TIMEOUT = "VERIFY_TIMEOUT"
 
@@ -108,7 +108,7 @@ ERROR_MESSAGES: dict[str, dict[str, str]] = {
         ErrorCode.QUOTA_VERIFICATIONS_LIMIT: "Verification quota exceeded for this period",
         # Verification
         ErrorCode.VERIFY_INVALID_EMAIL: "Invalid email format",
-        ErrorCode.VERIFY_INVALID_DOMAIN: "Domain not found or invalid",
+        ErrorCode.VERIFY_DOMAIN_NOT_FOUND: "Domain not found or invalid",
         ErrorCode.VERIFY_SMTP_BLOCKED: "SMTP verification unavailable (port 25 blocked)",
         ErrorCode.VERIFY_TIMEOUT: "Verification timed out",
         # API Keys
@@ -156,7 +156,7 @@ ERROR_MESSAGES: dict[str, dict[str, str]] = {
         ErrorCode.QUOTA_VERIFICATIONS_LIMIT: "Cuota de verificaciones excedida para este período",
         # Verification
         ErrorCode.VERIFY_INVALID_EMAIL: "Formato de email inválido",
-        ErrorCode.VERIFY_INVALID_DOMAIN: "Dominio no encontrado o inválido",
+        ErrorCode.VERIFY_DOMAIN_NOT_FOUND: "Dominio no encontrado o inválido",
         ErrorCode.VERIFY_SMTP_BLOCKED: "Verificación SMTP no disponible (puerto 25 bloqueado)",
         ErrorCode.VERIFY_TIMEOUT: "Tiempo de verificación excedido",
         # API Keys

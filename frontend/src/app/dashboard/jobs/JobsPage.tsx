@@ -40,13 +40,13 @@ export function JobsPage() {
       </label>
 
       {cancelError && (
-        <p style={{ color: '#f87171', marginBottom: '0.5rem' }}>{cancelError}</p>
+        <p style={{ color: '#f87171', marginBottom: '0.5rem' }}>{cancelError.startsWith('errors.') ? tCommon(cancelError) : cancelError}</p>
       )}
 
       {loading ? (
         <p>{tCommon('loading')}</p>
       ) : error ? (
-        <p style={{ color: '#f87171' }}>{error}</p>
+        <p style={{ color: '#f87171' }}>{error.startsWith('errors.') ? tCommon(error) : error}</p>
       ) : jobs.length === 0 ? (
         <p>{t('noJobs')}</p>
       ) : (

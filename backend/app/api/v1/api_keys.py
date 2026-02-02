@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, get_workspace_required, require_scope
+from app.core.error_codes import ErrorCode
 from app.core.security import full_api_key, generate_api_key_prefix, generate_api_key_secret, hash_api_key
 from app.models import ApiKey
 from app.schemas.auth import ApiKeyCreate
@@ -30,7 +31,9 @@ async def create_api_key(
     r = await db.execute(select(ApiKey).where(ApiKey.workspace_id == workspace.id, ApiKey.revoked_at.is_(None)))
     count = len(r.unique().scalars().all())
     if count >= max_keys:
-        return APIResponse.err("QUOTA_EXCEEDED", f"Max API keys for plan: {max_keys}", {"max": max_keys})
+        return APIResponse.err(
+            ErrorCode.QUOTA_API_KEYS_LIMIT.value, f"Max API keys for plan: {max_keys}", {"max": str(max_keys)}
+        )
     prefix = generate_api_key_prefix()
     secret = generate_api_key_secret()
     full = full_api_key(prefix, secret)
@@ -99,7 +102,7 @@ async def revoke_api_key(
     r = await db.execute(select(ApiKey).where(ApiKey.id == key_id, ApiKey.workspace_id == workspace.id))
     key = r.unique().scalars().one_or_none()
     if not key:
-        return APIResponse.err("NOT_FOUND", "API key not found", {"id": key_id})
+        return APIResponse.err(ErrorCode.API_KEY_NOT_FOUND.value, "API key not found", {"id": key_id})
     key.revoked_at = datetime.now(UTC)
     await db.commit()
     return APIResponse.ok({"ok": True})

@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, get_workspace_required, require_scope
+from app.core.error_codes import ErrorCode
 from app.schemas.common import APIResponse
 from app.schemas.verify import VerifyCandidate, VerifyStatelessRequest, VerifyStatelessResponse
 from app.services.usage_plan import check_verification_quota
@@ -25,7 +26,7 @@ async def verify_stateless(
     workspace, _, _ = workspace_required
     quota_err = await check_verification_quota(db, workspace)
     if quota_err:
-        return APIResponse.err("QUOTA_EXCEEDED", quota_err, {"code": "quota_exceeded"})
+        return APIResponse.err(ErrorCode.QUOTA_VERIFICATIONS_LIMIT.value, quota_err, {"code": "quota_exceeded"})
     candidates, best_email, best_result, _ = verify_and_pick_best(body.first_name, body.last_name, body.domain)
     from app.services.usage_plan import increment_verification_usage
 

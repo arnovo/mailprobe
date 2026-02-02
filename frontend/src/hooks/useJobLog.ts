@@ -46,7 +46,7 @@ export function useJobLog(jobId: string | null, workspaceId: string): UseJobLogS
       .then((d) => {
         if (showLoading) setLoading(false);
         if (d.error) {
-          if (showLoading) setError(d.error.message || 'Error');
+          if (showLoading) setError(d.error.message || 'errors.jobFailed');
           return;
         }
         setEntries(Array.isArray(d.data?.log_entries) ? d.data.log_entries : []);

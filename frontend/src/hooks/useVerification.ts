@@ -46,7 +46,7 @@ export function useVerification({ workspaceId, onComplete }: UseVerificationOpti
             setTimeout(() => { setMessage(null); setLogLines([]); }, MESSAGE_DISPLAY_SUCCESS_MS);
           } else if (status === 'failed') {
             clearInterval(interval);
-            setMessage(`Error: ${d.data?.error || 'Job fallido'}`);
+            setMessage(d.data?.error ? `Error: ${d.data.error}` : 'errors.jobFailed');
             setVerifyingId(null);
             setTimeout(() => { setMessage(null); setLogLines([]); }, MESSAGE_DISPLAY_ERROR_MS);
           }
@@ -79,7 +79,7 @@ export function useVerification({ workspaceId, onComplete }: UseVerificationOpti
       .then((r) => r.json())
       .then((d) => {
         if (d.error) {
-          setMessage(`Error: ${d.error.message || d.error.code || 'Error'}`);
+          setMessage(d.error.message ? `Error: ${d.error.message}` : (d.error.code ? `Error: ${d.error.code}` : 'errors.jobFailed'));
           setTimeout(() => setMessage(null), MESSAGE_DISPLAY_VERIFY_ERROR_MS);
           setVerifyingId(null);
           return;
@@ -91,7 +91,7 @@ export function useVerification({ workspaceId, onComplete }: UseVerificationOpti
         }
       })
       .catch(() => {
-        setMessage('Error de red');
+        setMessage('errors.networkError');
         setTimeout(() => setMessage(null), MESSAGE_DISPLAY_SHORT_MS);
         setVerifyingId(null);
       });

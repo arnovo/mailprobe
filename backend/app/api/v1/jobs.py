@@ -15,6 +15,7 @@ from app.api.deps import (
     require_scope,
     require_superadmin,
 )
+from app.core.error_codes import ErrorCode
 from app.models import Job, JobLogLine, User
 from app.schemas.common import APIResponse, JobListItem, JobStatus
 
@@ -60,9 +61,13 @@ async def cancel_job(
     r = await db.execute(select(Job).where(Job.job_id == job_id, Job.workspace_id == workspace.id))
     job = r.unique().scalars().one_or_none()
     if not job:
-        return APIResponse.err("NOT_FOUND", "Job not found", {"job_id": job_id})
+        return APIResponse.err(ErrorCode.JOB_NOT_FOUND.value, "Job not found", {"job_id": job_id})
     if job.status not in ("queued", "running"):
-        return APIResponse.err("INVALID_STATE", f"Cannot cancel job in state {job.status}", {"job_id": job_id})
+        return APIResponse.err(
+            ErrorCode.JOB_INVALID_STATE.value,
+            f"Cannot cancel job in state {job.status}",
+            {"job_id": job_id, "state": job.status},
+        )
     job.status = "cancelled"
     if job.log_lines is None:
         job.log_lines = []
@@ -96,7 +101,7 @@ async def get_job(
     r = await db.execute(select(Job).where(Job.job_id == job_id, Job.workspace_id == workspace.id))
     job = r.unique().scalars().one_or_none()
     if not job:
-        return APIResponse.err("NOT_FOUND", "Job not found", {"job_id": job_id})
+        return APIResponse.err(ErrorCode.JOB_NOT_FOUND.value, "Job not found", {"job_id": job_id})
     r2 = await db.execute(select(JobLogLine).where(JobLogLine.job_id == job.id).order_by(JobLogLine.seq))
     rows = r2.unique().scalars().all()
     if rows:

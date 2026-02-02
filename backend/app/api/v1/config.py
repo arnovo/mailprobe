@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, get_workspace_required, require_scope
+from app.core.error_codes import ErrorCode
 from app.models import WorkspaceConfigEntry
 from app.schemas.common import APIResponse
 from app.schemas.config import (
@@ -76,9 +77,9 @@ async def update_config(
         indices = [i for i in body.enabled_pattern_indices if 0 <= i < PATTERN_COUNT]
         if len(indices) < MIN_PATTERNS_ENABLED:
             return APIResponse.err(
-                "VALIDATION_ERROR",
-                f"Debe haber al menos {MIN_PATTERNS_ENABLED} patrones habilitados.",
-                {"enabled_pattern_indices": indices},
+                ErrorCode.VALIDATION_MIN_PATTERNS.value,
+                f"At least {MIN_PATTERNS_ENABLED} patterns must be enabled.",
+                {"enabled_pattern_indices": indices, "min": str(MIN_PATTERNS_ENABLED)},
             )
         await set_entry("enabled_pattern_indices", sorted(set(indices)))
     if body.smtp_mail_from is not None:
@@ -88,7 +89,9 @@ async def update_config(
         v = body.web_search_provider.strip().lower() if isinstance(body.web_search_provider, str) else ""
         if v and v not in ("bing", "serper"):
             return APIResponse.err(
-                "VALIDATION_ERROR", "web_search_provider debe ser 'bing', 'serper' o vacío.", {"web_search_provider": v}
+                ErrorCode.VALIDATION_INVALID_PROVIDER.value,
+                "Provider must be 'bing', 'serper' or empty.",
+                {"web_search_provider": v},
             )
         await set_entry("web_search_provider", v if v else None)
     if body.web_search_api_key is not None:

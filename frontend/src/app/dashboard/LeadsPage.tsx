@@ -57,7 +57,7 @@ export function LeadsPage() {
 
       {message && (
         <p style={{ marginBottom: '1rem', padding: '0.5rem', background: '#0f172a', borderRadius: '0.375rem', fontSize: '0.875rem' }}>
-          {message}
+          {message.startsWith('errors.') ? tCommon(message) : message}
         </p>
       )}
 

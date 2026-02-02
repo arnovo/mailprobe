@@ -36,7 +36,7 @@ export function useJobs({ token, workspaceId, activeOnly = true }: UseJobsOption
       .then((r) => r.json())
       .then((d) => {
         if (d.data?.jobs) setJobs(d.data.jobs);
-        if (d.error) setError(d.error.message || 'Error al cargar jobs');
+        if (d.error) setError(d.error.message || 'errors.loadJobs');
       })
       .catch(() => setError('Error de red'))
       .finally(() => setLoading(false));
@@ -56,16 +56,16 @@ export function useJobs({ token, workspaceId, activeOnly = true }: UseJobsOption
       .then((r) => r.json())
       .then((d) => {
         if (d.error) {
-          let msg = d.error.message || 'No se pudo cancelar';
-          if (d.error.code === 'FORBIDDEN' || msg.toLowerCase().includes('superadmin')) {
-            msg = 'Solo superadmin puede cancelar jobs.';
+          let msg = d.error.message || 'errors.cancelFailed';
+          if (d.error.code === 'JOB_INVALID_STATE' || (typeof msg === 'string' && msg.toLowerCase().includes('superadmin'))) {
+            msg = 'errors.cancelFailed';
           }
           setCancelError(msg);
         } else {
           loadJobs();
         }
       })
-      .catch(() => setCancelError('Error de red'))
+      .catch(() => setCancelError('errors.networkError'))
       .finally(() => setCancellingId(null));
   }, [workspaceId, loadJobs]);
 

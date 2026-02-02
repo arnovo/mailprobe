@@ -1,6 +1,7 @@
 'use client';
 
 import type { LogEntry } from '@/types';
+import { useTranslations } from 'next-intl';
 import { LogTable } from './LogTable';
 import { StatusText } from './StatusText';
 import { TerminalLog } from './TerminalLog';
@@ -21,15 +22,18 @@ export function LogContent({
   status,
   entries,
   lines,
-  emptyMessage = 'No hay líneas de log.',
-  inProgressMessage = 'Job en curso. El log se actualizará automáticamente.',
+  emptyMessage,
+  inProgressMessage,
 }: LogContentProps) {
+  const tCommon = useTranslations('common');
   const isInProgress = status === 'running' || status === 'queued';
   const isEmpty = entries.length === 0 && lines.length === 0;
+  const empty = emptyMessage ?? tCommon('errors.noLogLines');
+  const inProgress = inProgressMessage ?? tCommon('logInProgress');
 
   return (
     <>
-      {loading && <p style={{ color: '#94a3b8' }}>Cargando...</p>}
+      {loading && <p style={{ color: '#94a3b8' }}>{tCommon('loading')}</p>}
       {error && !loading && <p style={{ color: '#f87171', marginBottom: '0.75rem' }}>{error}</p>}
       <StatusText status={status} loading={loading} />
       {!loading && <LogTable entries={entries} />}
@@ -38,7 +42,7 @@ export function LogContent({
       )}
       {!loading && isEmpty && !error && (
         <p style={{ color: '#94a3b8' }}>
-          {isInProgress ? inProgressMessage : emptyMessage}
+          {isInProgress ? inProgress : empty}
         </p>
       )}
     </>

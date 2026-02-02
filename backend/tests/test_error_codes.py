@@ -121,7 +121,23 @@ class TestI18nEndpoints:
 
     @pytest.mark.asyncio
     async def test_get_unknown_error_code(self, client: AsyncClient):
-        """GET /v1/i18n/error-codes/{unknown} should return error."""
+        """GET /v1/i18n/error-codes/{unknown} should return 404."""
         response = await client.get("/v1/i18n/error-codes/UNKNOWN_CODE_XYZ")
-        assert response.status_code == 200
+        assert response.status_code == 404
         assert response.json()["error"]["code"] == "RESOURCE_NOT_FOUND"
+
+
+class TestAuthErrorCodes:
+    """Tests that auth endpoints return standardized ErrorCode values."""
+
+    @pytest.mark.asyncio
+    async def test_login_invalid_credentials_returns_auth_code(self, client: AsyncClient):
+        """POST /v1/auth/login with wrong password should return AUTH_INVALID_CREDENTIALS."""
+        response = await client.post(
+            "/v1/auth/login",
+            json={"email": "nonexistent@example.com", "password": "wrong"},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data.get("error") is not None
+        assert data["error"]["code"] == ErrorCode.AUTH_INVALID_CREDENTIALS.value

@@ -2,6 +2,7 @@
 
 import { CancelButton, LogContent, Modal, NavButtons } from '@/components/ui';
 import { Job, useJobLog } from '@/hooks';
+import { useTranslations } from 'next-intl';
 import { useCallback } from 'react';
 
 const JOB_ID_DISPLAY_LENGTH = 8;
@@ -17,7 +18,9 @@ interface JobLogModalProps {
 }
 
 export function JobLogModal({ job, allJobs, workspaceId, cancellingId, onClose, onCancel, onNavigate }: JobLogModalProps) {
+  const tCommon = useTranslations('common');
   const { lines, entries, status, loading, error, cleanup } = useJobLog(job?.job_id ?? null, workspaceId);
+  const displayError = error && error.startsWith('errors.') ? tCommon(error) : error;
 
   const relatedJobs = job?.lead_id ? allJobs.filter((j) => j.lead_id === job.lead_id) : [];
   const currentIndex = job ? relatedJobs.findIndex((j) => j.job_id === job.job_id) : -1;
@@ -48,11 +51,12 @@ export function JobLogModal({ job, allJobs, workspaceId, cancellingId, onClose, 
     >
       <LogContent
         loading={loading}
-        error={error}
+        error={displayError}
         status={status}
         entries={entries}
         lines={lines}
-        emptyMessage="No hay líneas de log para este job."
+        emptyMessage={tCommon('errors.noLogLines')}
+        inProgressMessage={tCommon('logInProgress')}
       />
     </Modal>
   );

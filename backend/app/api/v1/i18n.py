@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Query
+from starlette.responses import JSONResponse
 
 from app.core.error_codes import (
     DEFAULT_LOCALE,
@@ -80,10 +81,13 @@ async def get_error_code(
     try:
         error_code = ErrorCode(code)
     except ValueError:
-        return APIResponse.err(
-            ErrorCode.RESOURCE_NOT_FOUND.value,
-            f"Error code '{code}' not found",
-            {"code": code, "available_codes": [e.value for e in ErrorCode]},
+        return JSONResponse(
+            status_code=404,
+            content=APIResponse.err(
+                ErrorCode.RESOURCE_NOT_FOUND.value,
+                f"Error code '{code}' not found",
+                {"code": code, "available_codes": [e.value for e in ErrorCode]},
+            ).model_dump(),
         )
 
     message = get_error_message(error_code, locale)
