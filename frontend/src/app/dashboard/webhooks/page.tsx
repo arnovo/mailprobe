@@ -1,10 +1,11 @@
 'use client';
 
 /**
- * Página Webhooks: listar webhooks del workspace y crear uno (URL + eventos).
- * POST /v1/webhooks devuelve el secret para firmar; no se vuelve a mostrar.
+ * Webhooks page: list workspace webhooks and create one (URL + events).
+ * POST /v1/webhooks returns the secret for signing; it's not shown again.
  */
 
+import { useTranslations } from 'next-intl';
 import { fetchWithAuth, getAccessToken } from '@/lib/auth';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -20,6 +21,8 @@ type WebhookItem = {
 };
 
 export default function WebhooksPage() {
+  const t = useTranslations('webhooks');
+  const tCommon = useTranslations('common');
   const [items, setItems] = useState<WebhookItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -47,7 +50,7 @@ export default function WebhooksPage() {
         if (d.data?.items) setItems(d.data.items);
         if (d.error) setError(d.error.message || 'Error');
       })
-      .catch(() => setError('Error de red'))
+      .catch(() => setError('Network error'))
       .finally(() => setLoading(false));
   }, [token, workspaceId]);
 
@@ -62,7 +65,7 @@ export default function WebhooksPage() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!newUrl.trim()) {
-      setError('Indica la URL del webhook');
+      setError('Please provide the webhook URL');
       return;
     }
     setError('');
@@ -81,35 +84,32 @@ export default function WebhooksPage() {
           setNewUrl('');
           setNewEvents(['lead.created', 'verification.completed']);
           load();
-        } else setError(d.error?.message || 'Error al crear');
+        } else setError(d.error?.message || 'Error creating webhook');
       })
-      .catch(() => setError('Error de red'))
+      .catch(() => setError('Network error'))
       .finally(() => setSubmitting(false));
   }
 
-  if (!token) return <div className="card"><p>Cargando...</p></div>;
+  if (!token) return <div className="card"><p>{tCommon('loading')}</p></div>;
 
   return (
     <div className="card">
-      <h2>Webhooks</h2>
-      <p style={{ marginBottom: '1rem', color: '#94a3b8' }}>
-        Recibe eventos (leads, verificaciones, exports) en tu URL. La respuesta incluye un secret para firmar peticiones.
-      </p>
+      <h2>{t('title')}</h2>
 
       <form onSubmit={handleSubmit} style={{ marginBottom: '1.5rem' }}>
         <div style={{ marginBottom: '0.75rem' }}>
-          <label htmlFor="webhook-url" style={{ display: 'block', marginBottom: '0.25rem' }}>URL</label>
+          <label htmlFor="webhook-url" style={{ display: 'block', marginBottom: '0.25rem' }}>{t('url')}</label>
           <input
             id="webhook-url"
             type="url"
             value={newUrl}
             onChange={(e) => setNewUrl(e.target.value)}
-            placeholder="https://tu-servidor.com/webhook"
+            placeholder="https://your-server.com/webhook"
             style={{ width: '100%', maxWidth: 400 }}
           />
         </div>
         <div style={{ marginBottom: '0.75rem' }}>
-          <span id="webhook-events-label" style={{ display: 'block', marginBottom: '0.25rem' }}>Eventos</span>
+          <span id="webhook-events-label" style={{ display: 'block', marginBottom: '0.25rem' }}>{t('events')}</span>
           <div role="group" aria-labelledby="webhook-events-label" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
             {EVENT_OPTIONS.map((ev) => (
               <label key={ev} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
@@ -119,20 +119,19 @@ export default function WebhooksPage() {
             ))}
           </div>
         </div>
-        <button type="submit" disabled={submitting}>{submitting ? 'Guardando...' : 'Añadir webhook'}</button>
+        <button type="submit" disabled={submitting}>{submitting ? tCommon('loading') : t('create')}</button>
       </form>
 
       {error && <p style={{ color: '#f87171', marginBottom: '1rem' }}>{error}</p>}
 
-      <h3 style={{ marginBottom: '0.5rem' }}>Webhooks registrados</h3>
-      {loading ? <p>Cargando...</p> : (
+      <h3 style={{ marginBottom: '0.5rem' }}>{t('title')}</h3>
+      {loading ? <p>{tCommon('loading')}</p> : (
         <table>
           <thead>
             <tr>
-              <th>URL</th>
-              <th>Eventos</th>
-              <th>Activo</th>
-              <th>Creado</th>
+              <th>{t('url')}</th>
+              <th>{t('events')}</th>
+              <th>{t('active')}</th>
             </tr>
           </thead>
           <tbody>
@@ -140,14 +139,13 @@ export default function WebhooksPage() {
               <tr key={w.id}>
                 <td><code style={{ fontSize: '0.875rem' }}>{w.url}</code></td>
                 <td>{w.events?.join(', ') || '-'}</td>
-                <td>{w.is_active ? 'Sí' : 'No'}</td>
-                <td>{w.created_at ? new Date(w.created_at).toLocaleString() : '-'}</td>
+                <td>{w.is_active ? tCommon('yes') : tCommon('no')}</td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
-      {!loading && items.length === 0 && <p>No hay webhooks. Añade uno arriba.</p>}
+      {!loading && items.length === 0 && <p>{t('noWebhooks')}</p>}
     </div>
   );
 }

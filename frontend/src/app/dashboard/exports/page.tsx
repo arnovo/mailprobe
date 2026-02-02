@@ -1,16 +1,20 @@
 'use client';
 
 /**
- * Página Exports: solicitar exportación CSV (POST /v1/exports/csv, devuelve job_id),
- * consultar estado con GET /v1/jobs/{job_id} y descargar CSV cuando status === succeeded.
+ * Exports page: request CSV export (POST /v1/exports/csv, returns job_id),
+ * check status with GET /v1/jobs/{job_id} and download CSV when status === succeeded.
  */
 
+import { useTranslations } from 'next-intl';
 import { fetchWithAuth, getAccessToken } from '@/lib/auth';
 import { useEffect, useState } from 'react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export default function ExportsPage() {
+  const t = useTranslations('exports');
+  const tCommon = useTranslations('common');
+  const tJobs = useTranslations('jobs');
   const [jobId, setJobId] = useState('');
   const [requesting, setRequesting] = useState(false);
   const [lastJobId, setLastJobId] = useState('');
@@ -45,7 +49,7 @@ export default function ExportsPage() {
           setJobStatus(null);
         } else setError(d.error?.message || 'Error');
       })
-      .catch(() => setError('Error de red'))
+      .catch(() => setError('Network error'))
       .finally(() => setRequesting(false));
   }
 
@@ -60,9 +64,9 @@ export default function ExportsPage() {
       .then((r) => r.json())
       .then((d) => {
         if (d.data) setJobStatus(d.data);
-        else setError(d.error?.message || 'Job no encontrado');
+        else setError(d.error?.message || 'Job not found');
       })
-      .catch(() => setError('Error de red'))
+      .catch(() => setError('Network error'))
       .finally(() => setPolling(false));
   }
 
@@ -78,28 +82,25 @@ export default function ExportsPage() {
     URL.revokeObjectURL(url);
   }
 
-  if (!token) return <div className="card"><p>Cargando...</p></div>;
+  if (!token) return <div className="card"><p>{tCommon('loading')}</p></div>;
 
   return (
     <div className="card">
-      <h2>Exportar CSV</h2>
-      <p style={{ marginBottom: '1rem', color: '#94a3b8' }}>
-        Genera un CSV con los leads del workspace (excluyendo opt-out). La exportación es asíncrona: solicita y luego consulta el estado por job_id.
-      </p>
+      <h2>{t('title')}</h2>
 
       <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
         <button type="button" onClick={requestExport} disabled={requesting}>
-          {requesting ? 'Solicitando...' : 'Solicitar exportación CSV'}
+          {requesting ? tCommon('loading') : t('createCsv')}
         </button>
         {lastJobId && (
           <span style={{ color: '#94a3b8' }}>
-            Último job: <code>{lastJobId}</code>
+            Last job: <code>{lastJobId}</code>
           </span>
         )}
       </div>
 
       <div style={{ marginBottom: '1.5rem' }}>
-        <label htmlFor="export-job-id" style={{ display: 'block', marginBottom: '0.25rem' }}>Consultar estado de un job</label>
+        <label htmlFor="export-job-id" style={{ display: 'block', marginBottom: '0.25rem' }}>Check job status</label>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <input
             id="export-job-id"
@@ -110,7 +111,7 @@ export default function ExportsPage() {
             style={{ flex: 1, maxWidth: 320 }}
           />
           <button type="button" onClick={() => checkJob(pollJobId || jobId)} disabled={polling}>
-            {polling ? 'Consultando...' : 'Consultar'}
+            {polling ? tCommon('loading') : tCommon('search')}
           </button>
         </div>
       </div>
@@ -119,17 +120,19 @@ export default function ExportsPage() {
 
       {jobStatus && (
         <div style={{ marginBottom: '1rem', padding: '1rem', background: '#0f172a', borderRadius: '0.5rem', border: '1px solid #334155' }}>
-          <p><strong>Estado:</strong> {jobStatus.status}</p>
-          <p><strong>Progreso:</strong> {jobStatus.progress}%</p>
+          <p><strong>{tCommon('status')}:</strong> {tJobs(`status.${jobStatus.status}` as never) || jobStatus.status}</p>
+          <p><strong>Progress:</strong> {jobStatus.progress}%</p>
           {jobStatus.error && <p style={{ color: '#f87171' }}>{jobStatus.error}</p>}
           {jobStatus.status === 'succeeded' && jobStatus.result?.csv && (
             <p>
-              Filas: {jobStatus.result.row_count ?? '—'}{' '}
-              <button type="button" onClick={downloadCsv}>Descargar CSV</button>
+              Rows: {jobStatus.result.row_count ?? '—'}{' '}
+              <button type="button" onClick={downloadCsv}>{t('download')}</button>
             </p>
           )}
         </div>
       )}
+
+      {!jobStatus && !error && <p>{t('noExports')}</p>}
     </div>
   );
 }

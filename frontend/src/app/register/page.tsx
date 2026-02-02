@@ -1,15 +1,19 @@
 'use client';
 
 /**
- * Página de registro: nombre, email, contraseña.
- * Llama a POST /v1/auth/register; si OK guarda tokens en localStorage y redirige al dashboard.
+ * Registration page: name, email, password.
+ * Calls POST /v1/auth/register; if OK saves tokens to localStorage and redirects to dashboard.
  */
 
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 export default function RegisterPage() {
+  const t = useTranslations('auth');
+  const tCommon = useTranslations('common');
+  const tErrors = useTranslations('errors');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -26,7 +30,9 @@ export default function RegisterPage() {
     });
     const data = await res.json();
     if (data.error) {
-      setError(data.error.message || 'Error al registrarse');
+      const errorCode = data.error.code;
+      const translatedError = errorCode ? tErrors(errorCode as never) : null;
+      setError(translatedError || data.error.message || tCommon('error'));
       return;
     }
     if (data.data?.access_token) {
@@ -40,25 +46,25 @@ export default function RegisterPage() {
 
   return (
     <div className="container">
-      <h1>Registro</h1>
+      <h1>{t('register')}</h1>
       <form onSubmit={handleSubmit} style={{ maxWidth: 400, marginTop: '1rem' }}>
         {error && <p style={{ color: '#f87171', marginBottom: '0.5rem' }}>{error}</p>}
         <div style={{ marginBottom: '0.75rem' }}>
-          <label htmlFor="register-name" style={{ display: 'block', marginBottom: '0.25rem' }}>Nombre</label>
+          <label htmlFor="register-name" style={{ display: 'block', marginBottom: '0.25rem' }}>{tCommon('name')}</label>
           <input id="register-name" type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} style={{ width: '100%' }} />
         </div>
         <div style={{ marginBottom: '0.75rem' }}>
-          <label htmlFor="register-email" style={{ display: 'block', marginBottom: '0.25rem' }}>Email</label>
+          <label htmlFor="register-email" style={{ display: 'block', marginBottom: '0.25rem' }}>{t('email')}</label>
           <input id="register-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required style={{ width: '100%' }} />
         </div>
         <div style={{ marginBottom: '0.75rem' }}>
-          <label htmlFor="register-password" style={{ display: 'block', marginBottom: '0.25rem' }}>Contraseña</label>
+          <label htmlFor="register-password" style={{ display: 'block', marginBottom: '0.25rem' }}>{t('password')}</label>
           <input id="register-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required style={{ width: '100%' }} />
         </div>
-        <button type="submit">Registrarse</button>
+        <button type="submit">{t('register')}</button>
       </form>
       <p style={{ marginTop: '1rem' }}>
-        <Link href="/login">Ya tengo cuenta</Link>
+        <Link href="/login">{t('hasAccount')}</Link>
       </p>
     </div>
   );

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { JobStatusBadge, SignalsBadges, VerificationStatusBadge } from '@/components/ui';
 import { Lead } from '@/hooks/useLeads';
 
@@ -12,10 +13,12 @@ interface LeadsTableProps {
 }
 
 export function LeadsTable({ leads, verifyingId, onViewLog, onVerify, onAlertClick }: LeadsTableProps) {
+  const t = useTranslations('leads');
+
   const getAlerts = (lead: Lead): string[] => {
     const alerts: string[] = [];
-    if (!lead.last_name) alerts.push('Sin apellido. Añade apellido o activa "Permitir leads sin apellido" en Configuración.');
-    if (!lead.domain) alerts.push('Sin dominio. Añade un dominio para poder verificar.');
+    if (!lead.last_name) alerts.push('Missing last name. Add last name or enable "Allow leads without last name" in Settings.');
+    if (!lead.domain) alerts.push('Missing domain. Add a domain to verify.');
     return alerts;
   };
 
@@ -23,10 +26,10 @@ export function LeadsTable({ leads, verifyingId, onViewLog, onVerify, onAlertCli
     <table className="leads-table">
       <thead>
         <tr>
-          <th style={{ width: '25%' }}>Contacto</th>
-          <th style={{ width: '30%' }}>Email</th>
-          <th style={{ width: '25%' }}>Verificación</th>
-          <th style={{ width: '20%', textAlign: 'right' }}>Acciones</th>
+          <th style={{ width: '25%' }}>{t('firstName')}</th>
+          <th style={{ width: '30%' }}>{t('emailBest')}</th>
+          <th style={{ width: '25%' }}>{t('verificationStatus')}</th>
+          <th style={{ width: '20%', textAlign: 'right' }}>{t('actions') || 'Actions'}</th>
         </tr>
       </thead>
       <tbody>
@@ -36,7 +39,7 @@ export function LeadsTable({ leads, verifyingId, onViewLog, onVerify, onAlertCli
           
           return (
             <tr key={lead.id}>
-              {/* Contacto: Nombre + Empresa */}
+              {/* Contact: Name + Company */}
               <td>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.125rem' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontWeight: 500 }}>
@@ -54,7 +57,7 @@ export function LeadsTable({ leads, verifyingId, onViewLog, onVerify, onAlertCli
                           lineHeight: 1,
                           opacity: 0.9
                         }}
-                        title="Ver alertas"
+                        title={t('alerts')}
                       >
                         ⚠️
                       </button>
@@ -75,11 +78,11 @@ export function LeadsTable({ leads, verifyingId, onViewLog, onVerify, onAlertCli
                   fontSize: '0.875rem',
                   color: lead.email_best ? '#e2e8f0' : '#64748b'
                 }}>
-                  {lead.email_best || 'Sin email'}
+                  {lead.email_best || '—'}
                 </span>
               </td>
 
-              {/* Verificación: Estado + Señales + Job badge */}
+              {/* Verification: Status + Signals + Job badge */}
               <td>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                   <VerificationStatusBadge 
@@ -89,11 +92,11 @@ export function LeadsTable({ leads, verifyingId, onViewLog, onVerify, onAlertCli
                     provider={lead.provider}
                     reason={lead.notes}
                   />
-                  {/* Mostrar señales DNS si hay verificación */}
+                  {/* Show DNS signals if verified */}
                   {lead.verification_status !== 'pending' && lead.signals && lead.signals.length > 0 && (
                     <SignalsBadges signals={lead.signals} compact />
                   )}
-                  {/* Solo mostrar job status si es útil: error, en cola o ejecutando */}
+                  {/* Only show job status if useful: error, queued or running */}
                   {lead.last_job_status && ['failed', 'cancelled', 'running', 'queued'].includes(lead.last_job_status) && (
                     <div style={{ marginTop: '0.125rem' }}>
                       <JobStatusBadge status={lead.last_job_status} />
@@ -102,13 +105,13 @@ export function LeadsTable({ leads, verifyingId, onViewLog, onVerify, onAlertCli
                 </div>
               </td>
 
-              {/* Acciones */}
+              {/* Actions */}
               <td>
                 <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                   <button 
                     type="button" 
                     onClick={() => onViewLog(lead)} 
-                    title="Ver log de verificación"
+                    title={t('viewLog')}
                     className="btn-secondary btn-sm"
                   >
                     Log
@@ -120,7 +123,7 @@ export function LeadsTable({ leads, verifyingId, onViewLog, onVerify, onAlertCli
                       disabled={verifyingId === lead.id}
                       className="btn-primary btn-sm"
                     >
-                      {verifyingId === lead.id ? '...' : 'Verificar'}
+                      {verifyingId === lead.id ? '...' : t('verify')}
                     </button>
                   )}
                 </div>

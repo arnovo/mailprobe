@@ -1,15 +1,18 @@
 'use client';
 
 /**
- * Página Uso: GET /v1/usage para ver verificaciones usadas/límite, exports y plan del workspace.
+ * Usage page: GET /v1/usage to see verifications used/limit, exports and workspace plan.
  */
 
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { getAccessToken, fetchWithAuth } from '@/lib/auth';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export default function UsagePage() {
+  const t = useTranslations('usage');
+  const tCommon = useTranslations('common');
   const [data, setData] = useState<{
     period?: string;
     verifications?: number;
@@ -39,28 +42,28 @@ export default function UsagePage() {
         if (d.data) setData(d.data);
         if (d.error) setError(d.error.message || 'Error');
       })
-      .catch(() => setError('Error de red'))
+      .catch(() => setError('Network error'))
       .finally(() => setLoading(false));
   }, [token, workspaceId]);
 
-  if (!token) return <div className="card"><p>Cargando...</p></div>;
+  if (!token) return <div className="card"><p>{tCommon('loading')}</p></div>;
 
   return (
     <div className="card">
-      <h2>Uso del workspace</h2>
-      {loading ? <p>Cargando...</p> : error ? (
+      <h2>{t('title')}</h2>
+      {loading ? <p>{tCommon('loading')}</p> : error ? (
         <p style={{ color: '#f87171' }}>{error}</p>
       ) : data ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          <p><strong>Plan:</strong> {data.plan ?? '—'}</p>
-          <p><strong>Periodo:</strong> {data.period ?? '—'}</p>
+          <p><strong>{t('currentPlan')}:</strong> {data.plan ?? '—'}</p>
+          <p><strong>{t('resetDate')}:</strong> {data.period ?? '—'}</p>
           <p>
-            <strong>Verificaciones:</strong> {data.verifications ?? 0} / {data.verifications_limit ?? '∞'}
+            <strong>{t('verificationsUsed')}:</strong> {data.verifications ?? 0} / {data.verifications_limit ?? '∞'}
           </p>
-          <p><strong>Exports este periodo:</strong> {data.exports ?? 0}</p>
+          <p><strong>Exports:</strong> {data.exports ?? 0}</p>
         </div>
       ) : (
-        <p>No hay datos de uso.</p>
+        <p>No usage data.</p>
       )}
     </div>
   );

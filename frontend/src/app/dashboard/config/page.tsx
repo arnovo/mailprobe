@@ -1,16 +1,19 @@
 'use client';
 
 /**
- * Configuración del workspace: timeouts SMTP/DNS y patrones de candidatos de email.
- * Refactorizado para usar componentes modulares y hooks personalizados.
+ * Workspace configuration: SMTP/DNS timeouts and email candidate patterns.
+ * Refactored to use modular components and custom hooks.
  */
 
+import { useTranslations } from 'next-intl';
 import { PatternSettings, TimeoutSettings, WebSearchSettings } from '@/components/config';
 import { CONFIG_CONSTANTS, useAuth, useConfig } from '@/hooks';
 
 const { MIN_TIMEOUT, MAX_TIMEOUT, MIN_PATTERNS } = CONFIG_CONSTANTS;
 
 export default function ConfigPage() {
+  const t = useTranslations('config');
+  const tCommon = useTranslations('common');
   const { token, workspaceId } = useAuth();
   const { 
     config, 
@@ -38,22 +41,21 @@ export default function ConfigPage() {
   };
 
   if (!token) {
-    return <div className="card"><p>Cargando...</p></div>;
+    return <div className="card"><p>{tCommon('loading')}</p></div>;
   }
 
   return (
     <div className="card">
-      <h2>Configuración del workspace</h2>
+      <h2>{t('title')}</h2>
       <p style={{ color: '#94a3b8', marginBottom: '1rem' }}>
-        Timeouts y patrones de candidatos de email para la verificación. Si no defines valores, se usan los globales.
-        Timeouts: {MIN_TIMEOUT}–{MAX_TIMEOUT} s. Mínimo {MIN_PATTERNS} patrones habilitados.
+        {t('timeouts')}: {MIN_TIMEOUT}–{MAX_TIMEOUT}s. Min {MIN_PATTERNS} {t('patterns').toLowerCase()}.
       </p>
 
       {error && <p style={{ color: '#f87171', marginBottom: '0.5rem' }}>{error}</p>}
-      {success && <p style={{ color: '#4ade80', marginBottom: '0.5rem' }}>{success}</p>}
+      {success && <p style={{ color: '#4ade80', marginBottom: '0.5rem' }}>{t('saved')}</p>}
 
       {loading ? (
-        <p>Cargando...</p>
+        <p>{tCommon('loading')}</p>
       ) : (
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', maxWidth: 520 }}>
           <TimeoutSettings
@@ -93,7 +95,7 @@ export default function ConfigPage() {
               cursor: saving || config.enabledIndices.length < MIN_PATTERNS ? 'not-allowed' : 'pointer' 
             }}
           >
-            {saving ? 'Guardando…' : 'Guardar'}
+            {saving ? tCommon('loading') : tCommon('save')}
           </button>
         </form>
       )}

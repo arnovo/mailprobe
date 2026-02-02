@@ -1,10 +1,11 @@
 'use client';
 
 /**
- * Página API Keys: listar claves del workspace, crear (nombre + scopes) y revocar.
- * La clave completa solo se devuelve una vez al crear; se muestra en un bloque para copiar.
+ * API Keys page: list workspace keys, create (name + scopes) and revoke.
+ * The full key is only returned once on creation; shown in a block to copy.
  */
 
+import { useTranslations } from 'next-intl';
 import { fetchWithAuth, getAccessToken } from '@/lib/auth';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -23,6 +24,8 @@ type ApiKeyItem = {
 };
 
 export default function ApiKeysPage() {
+  const t = useTranslations('apiKeys');
+  const tCommon = useTranslations('common');
   const [items, setItems] = useState<ApiKeyItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -51,7 +54,7 @@ export default function ApiKeysPage() {
         if (d.data?.items) setItems(d.data.items);
         if (d.error) setError(d.error.message || 'Error');
       })
-      .catch(() => setError('Error de red'))
+      .catch(() => setError('Network error'))
       .finally(() => setLoading(false));
   }, [token, workspaceId]);
 
@@ -79,62 +82,59 @@ export default function ApiKeysPage() {
           setNewName('');
           setNewScopes(['leads:read', 'leads:write', 'verify:run']);
           load();
-        } else setError(d.error?.message || 'Error al crear');
+        } else setError(d.error?.message || 'Error creating key');
       })
-      .catch(() => setError('Error de red'))
+      .catch(() => setError('Network error'))
       .finally(() => setCreating(false));
   }
 
   function handleRevoke(id: number) {
-    if (!confirm('¿Revocar esta API key? No podrás usarla de nuevo.')) return;
+    if (!confirm('Revoke this API key? You won\'t be able to use it again.')) return;
     fetchWithAuth(`${API_URL}/v1/api-keys/${id}`, {
       method: 'DELETE',
       headers: { 'X-Workspace-Id': workspaceId },
     })
       .then((r) => r.json())
       .then((d) => { if (!d.error) load(); else setError(d.error.message); })
-      .catch(() => setError('Error de red'));
+      .catch(() => setError('Network error'));
   }
 
   function copyKey() {
     if (createdKey) {
       navigator.clipboard.writeText(createdKey);
-      alert('Copiado al portapapeles. Guárdala: solo se muestra una vez.');
+      alert(t('keyCopied'));
     }
   }
 
-  if (!token) return <div className="card"><p>Cargando...</p></div>;
+  if (!token) return <div className="card"><p>{tCommon('loading')}</p></div>;
 
   return (
     <div className="card">
-      <h2>API Keys</h2>
-      <p style={{ marginBottom: '1rem', color: '#94a3b8' }}>
-        Usa API Keys para n8n o scripts. La clave completa solo se muestra una vez al crearla.
-      </p>
+      <h2>{t('title')}</h2>
 
       {createdKey && (
         <div style={{ marginBottom: '1rem', padding: '1rem', background: '#0f172a', borderRadius: '0.5rem', border: '1px solid #334155' }}>
-          <p style={{ marginBottom: '0.5rem', fontWeight: 600 }}>Clave creada (guárdala ahora):</p>
+          <p style={{ marginBottom: '0.5rem', fontWeight: 600 }}>{t('keyCopied')}:</p>
           <code style={{ wordBreak: 'break-all', display: 'block', marginBottom: '0.5rem' }}>{createdKey}</code>
-          <button type="button" onClick={copyKey}>Copiar</button>
-          <button type="button" onClick={() => setCreatedKey(null)} style={{ marginLeft: '0.5rem' }}>Cerrar</button>
+          <button type="button" onClick={copyKey}>{t('copyKey')}</button>
+          <button type="button" onClick={() => setCreatedKey(null)} style={{ marginLeft: '0.5rem' }}>{tCommon('close')}</button>
         </div>
       )}
 
       <form onSubmit={handleCreate} style={{ marginBottom: '1.5rem', display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end' }}>
         <div>
-          <label htmlFor="apikey-name" style={{ display: 'block', marginBottom: '0.25rem' }}>Nombre</label>
+          <label htmlFor="apikey-name" style={{ display: 'block', marginBottom: '0.25rem' }}>{t('name')}</label>
           <input
             id="apikey-name"
             type="text"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            placeholder="n8n / integración"
+            placeholder="n8n / integration"
             style={{ width: 200 }}
           />
         </div>
         <div>
-          <span id="apikey-scopes-label" style={{ display: 'block', marginBottom: '0.25rem' }}>Scopes</span>
+          <span id="apikey-scopes-label" style={{ display: 'block', marginBottom: '0.25rem' }}>{t('scopes')}</span>
           <div role="group" aria-labelledby="apikey-scopes-label" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
             {SCOPES.map((s) => (
               <label key={s} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
@@ -144,21 +144,20 @@ export default function ApiKeysPage() {
             ))}
           </div>
         </div>
-        <button type="submit" disabled={creating}>{creating ? 'Creando...' : 'Crear API Key'}</button>
+        <button type="submit" disabled={creating}>{creating ? tCommon('loading') : t('create')}</button>
       </form>
 
       {error && <p style={{ color: '#f87171', marginBottom: '1rem' }}>{error}</p>}
 
-      <h3 style={{ marginBottom: '0.5rem' }}>Claves del workspace</h3>
-      {loading ? <p>Cargando...</p> : (
+      <h3 style={{ marginBottom: '0.5rem' }}>{t('title')}</h3>
+      {loading ? <p>{tCommon('loading')}</p> : (
         <table>
           <thead>
             <tr>
-              <th>Nombre</th>
-              <th>Prefijo</th>
-              <th>Scopes</th>
-              <th>Último uso</th>
-              <th>Creada</th>
+              <th>{t('name')}</th>
+              <th>{t('key')}</th>
+              <th>{t('scopes')}</th>
+              <th>{t('createdAt')}</th>
               <th></th>
             </tr>
           </thead>
@@ -168,17 +167,16 @@ export default function ApiKeysPage() {
                 <td>{k.name}</td>
                 <td><code>{k.key_prefix}</code></td>
                 <td>{k.scopes?.join(', ') || '-'}</td>
-                <td>{k.last_used_at ? new Date(k.last_used_at).toLocaleString() : '-'}</td>
                 <td>{k.created_at ? new Date(k.created_at).toLocaleString() : '-'}</td>
                 <td>
-                  <button type="button" onClick={() => handleRevoke(k.id)} style={{ color: '#f87171' }}>Revocar</button>
+                  <button type="button" onClick={() => handleRevoke(k.id)} style={{ color: '#f87171' }}>{t('revoke')}</button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
-      {!loading && items.filter((k) => !k.revoked_at).length === 0 && <p>No hay API keys. Crea una arriba.</p>}
+      {!loading && items.filter((k) => !k.revoked_at).length === 0 && <p>{t('noKeys')}</p>}
     </div>
   );
 }

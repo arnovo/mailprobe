@@ -1,15 +1,18 @@
 'use client';
 
 /**
- * Página Jobs: lista jobs del workspace (activos por defecto).
- * Refactorizado para usar componentes modulares y hooks personalizados.
+ * Jobs page: list workspace jobs (active by default).
+ * Refactored to use modular components and custom hooks.
  */
 
+import { useTranslations } from 'next-intl';
 import { JobLogModal, JobsTable } from '@/components/jobs';
 import { Job, useAuth, useJobs } from '@/hooks';
 import { useState } from 'react';
 
 export default function JobsPage() {
+  const t = useTranslations('jobs');
+  const tCommon = useTranslations('common');
   const { token, workspaceId } = useAuth();
   const [activeOnly, setActiveOnly] = useState(false);
   const { jobs, loading, error, cancellingId, cancelError, cancelJob } = useJobs({ 
@@ -20,15 +23,12 @@ export default function JobsPage() {
   const [logModalJob, setLogModalJob] = useState<Job | null>(null);
 
   if (!token) {
-    return <div className="card"><p>Cargando...</p></div>;
+    return <div className="card"><p>{tCommon('loading')}</p></div>;
   }
 
   return (
     <div className="card">
-      <h2>Jobs del workspace</h2>
-      <p style={{ color: '#94a3b8', marginBottom: '0.5rem' }}>
-        Jobs de verificación, export, etc. Desmarca &quot;Solo activos&quot; para ver también completados, fallidos y cancelados (y su log).
-      </p>
+      <h2>{t('title')}</h2>
       
       <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
         <input
@@ -36,7 +36,7 @@ export default function JobsPage() {
           checked={activeOnly}
           onChange={(e) => setActiveOnly(e.target.checked)}
         />
-        Solo activos (queued / running)
+        {t('status.queued')} / {t('status.running')}
       </label>
 
       {cancelError && (
@@ -44,11 +44,11 @@ export default function JobsPage() {
       )}
 
       {loading ? (
-        <p>Cargando...</p>
+        <p>{tCommon('loading')}</p>
       ) : error ? (
         <p style={{ color: '#f87171' }}>{error}</p>
       ) : jobs.length === 0 ? (
-        <p>No hay jobs{activeOnly ? ' activos' : ''}.</p>
+        <p>{t('noJobs')}</p>
       ) : (
         <JobsTable
           jobs={jobs}
