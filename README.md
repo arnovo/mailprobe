@@ -34,6 +34,71 @@ Este proyecto **no usa APIs de pago** para la lógica core (encontrar/verificar 
 
 ---
 
+## Verificación sin SMTP (entornos con puerto 25 bloqueado)
+
+El puerto 25 (SMTP) está bloqueado en muchos entornos:
+- **Docker Desktop (macOS/Windows):** El puerto 25 outbound está filtrado.
+- **Cloud providers:** AWS, GCP, Azure bloquean o limitan el puerto 25 por defecto.
+- **ISPs residenciales:** Muchos bloquean el puerto 25 para prevenir spam.
+
+### Detección automática
+
+El sistema detecta automáticamente cuando SMTP está bloqueado:
+- Si hay timeouts a 3+ servidores MX distintos en 5 minutos, se activa el flag `smtp_blocked`.
+- El flag se guarda en Redis con TTL de 15 minutos.
+- Mientras está activo, las verificaciones **no intentan probes SMTP** (ahorra tiempo y recursos).
+
+### Señales alternativas
+
+Cuando SMTP no está disponible, el verificador usa señales alternativas:
+
+| Señal | Descripción | Puntos |
+|-------|-------------|--------|
+| **MX** | Registros MX encontrados | +20 |
+| **SPF** | Registro SPF configurado | +10 |
+| **DMARC** | Política DMARC configurada | +10 |
+| **Provider** | Proveedor conocido (Google, Microsoft, etc.) | +10 |
+| **Web** | Email encontrado en fuentes públicas | +15 |
+
+### Estados de verificación
+
+| Estado | Significado |
+|--------|-------------|
+| `valid` | SMTP confirmó que el mailbox existe (solo si SMTP disponible) |
+| `risky` | Señales positivas (MX, SPF, DMARC) pero sin confirmación SMTP |
+| `unknown` | SMTP disponible pero respuesta inconclusa (greylist real) |
+| `invalid` | Formato malo, dominio desechable, sin MX, o SMTP rechazó (550) |
+
+### Campos de API
+
+La respuesta de verificación incluye señales detalladas:
+
+```json
+{
+  "best_result": {
+    "email": "juan.garcia@empresa.com",
+    "status": "risky",
+    "confidence_score": 75,
+    "mx_found": true,
+    "spf_present": true,
+    "dmarc_present": true,
+    "catch_all": null,
+    "smtp_attempted": false,
+    "smtp_blocked": true,
+    "provider": "google",
+    "web_mentioned": false,
+    "signals": ["mx", "spf", "dmarc", "provider:google", "smtp_blocked"],
+    "reason": "MX ok | SPF | DMARC | provider:google | SMTP blocked"
+  }
+}
+```
+
+### Recomendación para producción
+
+Para verificación SMTP completa, despliega el worker en un VPS con puerto 25 abierto (OVH, Hetzner, DigitalOcean en regiones que lo permiten). El backend/API puede seguir en cloud con puerto 25 bloqueado; solo el worker Celery necesita acceso.
+
+---
+
 ## Setup local (Docker Compose)
 
 ```bash
