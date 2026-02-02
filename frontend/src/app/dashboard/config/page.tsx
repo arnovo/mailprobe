@@ -5,8 +5,8 @@
  * Refactorizado para usar componentes modulares y hooks personalizados.
  */
 
-import { useAuth, useConfig, CONFIG_CONSTANTS } from '@/hooks';
-import { TimeoutSettings, WebSearchSettings, PatternSettings } from '@/components/config';
+import { PatternSettings, TimeoutSettings, WebSearchSettings } from '@/components/config';
+import { CONFIG_CONSTANTS, useAuth, useConfig } from '@/hooks';
 
 const { MIN_TIMEOUT, MAX_TIMEOUT, MIN_PATTERNS } = CONFIG_CONSTANTS;
 

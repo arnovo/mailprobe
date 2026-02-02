@@ -1,4 +1,5 @@
 """Workspace verification config: GET/PUT por workspace (tabla clave-valor)."""
+
 from __future__ import annotations
 
 import json
@@ -31,9 +32,7 @@ async def get_config(
 ) -> APIResponse:
     """Config del workspace (fusionada con globales)."""
     workspace, _, _ = workspace_required
-    r = await db.execute(
-        select(WorkspaceConfigEntry).where(WorkspaceConfigEntry.workspace_id == workspace.id)
-    )
+    r = await db.execute(select(WorkspaceConfigEntry).where(WorkspaceConfigEntry.workspace_id == workspace.id))
     entries = list(r.scalars().all())
     return APIResponse.ok(merge_config_for_response(entries))
 
@@ -46,9 +45,7 @@ async def update_config(
 ) -> APIResponse:
     """Actualiza config del workspace. Cada clave se guarda como registro; null/vacío = borrar (usar global)."""
     workspace, _, _ = workspace_required
-    r = await db.execute(
-        select(WorkspaceConfigEntry).where(WorkspaceConfigEntry.workspace_id == workspace.id)
-    )
+    r = await db.execute(select(WorkspaceConfigEntry).where(WorkspaceConfigEntry.workspace_id == workspace.id))
     entries_by_key = {e.key: e for e in r.scalars().all()}
 
     async def set_entry(key: str, value: Any) -> None:
@@ -66,9 +63,13 @@ async def update_config(
             db.add(WorkspaceConfigEntry(workspace_id=workspace.id, key=key, value=value))
 
     if body.smtp_timeout_seconds is not None:
-        await set_entry("smtp_timeout_seconds", str(max(MIN_TIMEOUT_SECONDS, min(MAX_TIMEOUT_SECONDS, body.smtp_timeout_seconds))))
+        await set_entry(
+            "smtp_timeout_seconds", str(max(MIN_TIMEOUT_SECONDS, min(MAX_TIMEOUT_SECONDS, body.smtp_timeout_seconds)))
+        )
     if body.dns_timeout_seconds is not None:
-        await set_entry("dns_timeout_seconds", str(max(MIN_TIMEOUT_SECONDS, min(MAX_TIMEOUT_SECONDS, body.dns_timeout_seconds))))
+        await set_entry(
+            "dns_timeout_seconds", str(max(MIN_TIMEOUT_SECONDS, min(MAX_TIMEOUT_SECONDS, body.dns_timeout_seconds)))
+        )
     if body.enabled_pattern_indices is not None:
         indices = [i for i in body.enabled_pattern_indices if 0 <= i < PATTERN_COUNT]
         if len(indices) < MIN_PATTERNS_ENABLED:
@@ -84,7 +85,9 @@ async def update_config(
     if body.web_search_provider is not None:
         v = body.web_search_provider.strip().lower() if isinstance(body.web_search_provider, str) else ""
         if v and v not in ("bing", "serper"):
-            return APIResponse.err("VALIDATION_ERROR", "web_search_provider debe ser 'bing', 'serper' o vacío.", {"web_search_provider": v})
+            return APIResponse.err(
+                "VALIDATION_ERROR", "web_search_provider debe ser 'bing', 'serper' o vacío.", {"web_search_provider": v}
+            )
         await set_entry("web_search_provider", v if v else None)
     if body.web_search_api_key is not None:
         v = body.web_search_api_key.strip() if isinstance(body.web_search_api_key, str) else ""
@@ -104,9 +107,7 @@ async def update_config(
             await set_entry("custom_patterns", None)  # Borrar si lista vacía
 
     await db.commit()
-    r = await db.execute(
-        select(WorkspaceConfigEntry).where(WorkspaceConfigEntry.workspace_id == workspace.id)
-    )
+    r = await db.execute(select(WorkspaceConfigEntry).where(WorkspaceConfigEntry.workspace_id == workspace.id))
     entries = list(r.scalars().all())
     return APIResponse.ok(merge_config_for_response(entries))
 

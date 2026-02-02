@@ -1,4 +1,5 @@
 """Workspace verification config schemas."""
+
 from __future__ import annotations
 
 from pydantic import BaseModel, Field
@@ -15,13 +16,16 @@ MAX_CUSTOM_PATTERNS = 20
 
 class ConfigResponse(BaseModel):
     """Config actual (fusionada con globales)."""
+
     smtp_timeout_seconds: int = Field(..., ge=MIN_TIMEOUT_SECONDS, le=MAX_TIMEOUT_SECONDS)
     dns_timeout_seconds: float = Field(..., ge=MIN_TIMEOUT_SECONDS, le=MAX_TIMEOUT_SECONDS)
     enabled_pattern_indices: list[int] = Field(..., min_length=MIN_PATTERNS_ENABLED)
     smtp_mail_from: str = Field(..., min_length=1, max_length=255)
     # Búsqueda web opcional (bing | serper | vacío)
     web_search_provider: str = ""
-    web_search_api_key: str = ""  # Nota: en respuesta devolvemos solo si hay o no (por seguridad); o el cliente la conoce
+    web_search_api_key: str = (
+        ""  # Nota: en respuesta devolvemos solo si hay o no (por seguridad); o el cliente la conoce
+    )
     # Permitir leads sin apellido (genera patrones genéricos: info@, contact@, etc.)
     allow_no_lastname: bool = False
     # Patrones personalizados del workspace (adicionales a los estándar)
@@ -32,6 +36,7 @@ class ConfigResponse(BaseModel):
 
 class ConfigUpdate(BaseModel):
     """Body para actualizar config (campos opcionales; null = usar global)."""
+
     smtp_timeout_seconds: int | None = Field(None, ge=MIN_TIMEOUT_SECONDS, le=MAX_TIMEOUT_SECONDS)
     dns_timeout_seconds: float | None = Field(None, ge=MIN_TIMEOUT_SECONDS, le=MAX_TIMEOUT_SECONDS)
     enabled_pattern_indices: list[int] | None = Field(

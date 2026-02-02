@@ -1,4 +1,5 @@
 """Workspace config: clave-valor (entries). Merge con valores globales."""
+
 from __future__ import annotations
 
 import json
@@ -70,9 +71,7 @@ def get_workspace_config_sync(db: Session, workspace_id: int) -> dict[str, Any]:
     Lee todos los registros de workspace_config_entries para ese workspace y aplica tipos/defaults.
     Keys: smtp_timeout_seconds, dns_timeout_seconds, enabled_pattern_indices, smtp_mail_from.
     """
-    r = db.execute(
-        select(WorkspaceConfigEntry).where(WorkspaceConfigEntry.workspace_id == workspace_id)
-    )
+    r = db.execute(select(WorkspaceConfigEntry).where(WorkspaceConfigEntry.workspace_id == workspace_id))
     entries = list(r.scalars().all())
     raw: dict[str, str] = {e.key: e.value for e in entries}
 
@@ -146,8 +145,7 @@ def merge_config_for_response(entries: list[WorkspaceConfigEntry]) -> dict[str, 
     web_search_api_key = raw.get("web_search_api_key", "").strip()
     # Mask API key for security
     web_search_api_key_masked = (
-        ("*" * 8 + web_search_api_key[-4:]) if len(web_search_api_key) > 4 
-        else ("*" * len(web_search_api_key))
+        ("*" * 8 + web_search_api_key[-4:]) if len(web_search_api_key) > 4 else ("*" * len(web_search_api_key))
     )
     # Allow leads without last name
     allow_no_lastname = raw.get("allow_no_lastname", "").strip().lower() in ("true", "1", "yes")

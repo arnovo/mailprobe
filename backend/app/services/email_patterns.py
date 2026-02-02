@@ -1,4 +1,5 @@
 """Email pattern generation (from MVP email_patterns)."""
+
 from __future__ import annotations
 
 from app.services.utils import slugify_name
