@@ -1,0 +1,111 @@
+# Pull Request Standards
+
+## Language
+
+**ALWAYS write PR titles and descriptions in English.** This applies to:
+- PR title
+- PR body/description
+- Commit messages (already enforced by Conventional Commits)
+
+## Creating PRs
+
+When the user asks to create a PR, follow this flow:
+
+1. **Verify branch and commits**
+   ```bash
+   git status
+   git log --oneline main..HEAD
+   git diff main...HEAD --stat
+   ```
+
+2. **Generate description from commits**
+   - Type: based on commit prefixes (feat/fix/refactor/etc.)
+   - Summary: synthesize changes in 1-3 sentences
+   - Main changes: extract from commits
+
+3. **Use the template**
+   - Template is at `.github/PULL_REQUEST_TEMPLATE.md`
+   - Fill ALL relevant sections
+   - Check applicable checkboxes
+
+## PR Structure
+
+```markdown
+## Summary
+[1-3 sentences describing the change]
+
+## Change Type
+- [x] feat: New feature
+
+## Main Changes
+- Change 1
+- Change 2
+
+## Files Affected
+| Area | Files |
+|------|-------|
+| Backend | api/, services/ |
+| Frontend | components/ |
+
+## Testing
+- [x] Unit tests pass
+- [x] Manually tested locally
+
+## Checklist
+- [x] Code follows conventions
+- [x] Commits follow Conventional Commits
+```
+
+## Command to Create PR
+
+```bash
+gh pr create --title "type(scope): short description" --body "$(cat <<'EOF'
+[Filled template content]
+EOF
+)"
+```
+
+## Pre-PR Validation
+
+Before creating a PR, verify:
+
+1. **All tests pass**
+   ```bash
+   cd backend && .venv/bin/python -m pytest tests/ -v
+   ```
+
+2. **No linting errors**
+   ```bash
+   cd backend && .venv/bin/python -m ruff check app/
+   cd frontend && npx tsc --noEmit
+   ```
+
+3. **Commits follow Conventional Commits**
+   ```bash
+   git log --oneline main..HEAD
+   ```
+
+4. **No secrets**
+   - Check for API keys, passwords, tokens in code
+
+## PR Titles
+
+Follow the same format as commits:
+
+```
+type(scope): imperative description in lowercase
+
+Examples:
+feat(verification): add SMTP blocked detection
+fix(leads): resolve duplicate email handling
+refactor(api): simplify auth middleware
+docs: update README with deployment guide
+```
+
+## Suggested Labels
+
+- `enhancement` - New feature
+- `bug` - Bug fix
+- `documentation` - Docs only
+- `refactor` - Refactoring
+- `breaking-change` - Breaking compatibility change

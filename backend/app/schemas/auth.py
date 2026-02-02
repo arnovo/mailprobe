@@ -1,4 +1,5 @@
 """Auth schemas."""
+
 from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, EmailStr
@@ -60,4 +61,5 @@ class ApiKeyResponse(BaseModel):
 
 class ApiKeyCreated(ApiKeyResponse):
     """Only on create: full key shown once."""
+
     key: str  # ef_xxx.secret

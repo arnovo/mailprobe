@@ -34,6 +34,71 @@ Este proyecto **no usa APIs de pago** para la lógica core (encontrar/verificar 
 
 ---
 
+## Verificación sin SMTP (entornos con puerto 25 bloqueado)
+
+El puerto 25 (SMTP) está bloqueado en muchos entornos:
+- **Docker Desktop (macOS/Windows):** El puerto 25 outbound está filtrado.
+- **Cloud providers:** AWS, GCP, Azure bloquean o limitan el puerto 25 por defecto.
+- **ISPs residenciales:** Muchos bloquean el puerto 25 para prevenir spam.
+
+### Detección automática
+
+El sistema detecta automáticamente cuando SMTP está bloqueado:
+- Si hay timeouts a 3+ servidores MX distintos en 5 minutos, se activa el flag `smtp_blocked`.
+- El flag se guarda en Redis con TTL de 15 minutos.
+- Mientras está activo, las verificaciones **no intentan probes SMTP** (ahorra tiempo y recursos).
+
+### Señales alternativas
+
+Cuando SMTP no está disponible, el verificador usa señales alternativas:
+
+| Señal | Descripción | Puntos |
+|-------|-------------|--------|
+| **MX** | Registros MX encontrados | +20 |
+| **SPF** | Registro SPF configurado | +10 |
+| **DMARC** | Política DMARC configurada | +10 |
+| **Provider** | Proveedor conocido (Google, Microsoft, etc.) | +10 |
+| **Web** | Email encontrado en fuentes públicas | +15 |
+
+### Estados de verificación
+
+| Estado | Significado |
+|--------|-------------|
+| `valid` | SMTP confirmó que el mailbox existe (solo si SMTP disponible) |
+| `risky` | Señales positivas (MX, SPF, DMARC) pero sin confirmación SMTP |
+| `unknown` | SMTP disponible pero respuesta inconclusa (greylist real) |
+| `invalid` | Formato malo, dominio desechable, sin MX, o SMTP rechazó (550) |
+
+### Campos de API
+
+La respuesta de verificación incluye señales detalladas:
+
+```json
+{
+  "best_result": {
+    "email": "juan.garcia@empresa.com",
+    "status": "risky",
+    "confidence_score": 75,
+    "mx_found": true,
+    "spf_present": true,
+    "dmarc_present": true,
+    "catch_all": null,
+    "smtp_attempted": false,
+    "smtp_blocked": true,
+    "provider": "google",
+    "web_mentioned": false,
+    "signals": ["mx", "spf", "dmarc", "provider:google", "smtp_blocked"],
+    "reason": "MX ok | SPF | DMARC | provider:google | SMTP blocked"
+  }
+}
+```
+
+### Recomendación para producción
+
+Para verificación SMTP completa, despliega el worker en un VPS con puerto 25 abierto (OVH, Hetzner, DigitalOcean en regiones que lo permiten). El backend/API puede seguir en cloud con puerto 25 bloqueado; solo el worker Celery necesita acceso.
+
+---
+
 ## Setup local (Docker Compose)
 
 ```bash
@@ -421,6 +486,71 @@ alembic -c alembic.ini revision -m "desc"  # nueva revisión
 cd backend
 pip install -r requirements.txt
 pytest -v
+```
+
+## Desarrollo
+
+### Branch Protection
+
+La rama `main` está protegida:
+- **No se permiten commits directos** (requiere PR)
+- **CI debe pasar** (`backend-tests`, `frontend-tests`) antes de mergear
+- **Aplica a todos**, incluidos admins
+- **Force push bloqueado**
+
+GitHub Actions solo se ejecuta en PRs (no en push a main).
+
+### Git Hooks
+
+El proyecto incluye hooks de git que se instalan automáticamente con `./validate.sh`:
+
+| Hook | Archivo fuente | Validaciones |
+|------|----------------|--------------|
+| **pre-commit** | `scripts/pre-commit.sh` | Secretos, tamaño archivos, ruff, eslint, TypeScript, pytest, conteo de tests |
+| **pre-push** | `scripts/pre-push.sh` | Formato de commits (Conventional Commits) |
+
+Instalación manual:
+
+```bash
+cp scripts/pre-commit.sh .git/hooks/pre-commit
+cp scripts/pre-push.sh .git/hooks/pre-push
+chmod +x .git/hooks/pre-commit .git/hooks/pre-push
+```
+
+### Regla de tests
+
+Cada commit que modifique código Python en `backend/app/` **debe añadir al menos 1 test nuevo**. El pre-commit lo verifica automáticamente.
+
+Para commits que no requieren tests (typos, config, frontend-only):
+
+```bash
+# Saltar solo la verificación de tests (el resto de validaciones sigue activo)
+SKIP_TEST_COUNT=1 git commit -m "fix: typo en mensaje"
+```
+
+### Pull Requests
+
+El proyecto incluye un template de PR en `.github/PULL_REQUEST_TEMPLATE.md`. Para validar antes de crear un PR:
+
+```bash
+./scripts/validate-pr.sh [base-branch]
+```
+
+El script verifica:
+- Rama correcta (no main)
+- Commits siguen Conventional Commits
+- Tests pasan
+- Linting OK
+- Sin secretos
+
+### Validación completa
+
+```bash
+./validate.sh              # Valida todo (instala hooks si faltan)
+./validate.sh --fix        # Auto-fix linters
+./validate.sh --skip-tests # Sin tests (más rápido)
+./validate.sh --backend    # Solo backend
+./validate.sh --frontend   # Solo frontend
 ```
 
 ## Despliegue (Render / Fly / DO)

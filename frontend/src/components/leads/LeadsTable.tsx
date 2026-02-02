@@ -1,7 +1,7 @@
 'use client';
 
+import { JobStatusBadge, SignalsBadges, VerificationStatusBadge } from '@/components/ui';
 import { Lead } from '@/hooks/useLeads';
-import { VerificationStatusBadge, JobStatusBadge } from '@/components/ui';
 
 interface LeadsTableProps {
   leads: Lead[];
@@ -79,13 +79,20 @@ export function LeadsTable({ leads, verifyingId, onViewLog, onVerify, onAlertCli
                 </span>
               </td>
 
-              {/* Verificación: Estado + Job badge solo si hay problema */}
+              {/* Verificación: Estado + Señales + Job badge */}
               <td>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                   <VerificationStatusBadge 
                     status={lead.verification_status} 
-                    webMentioned={lead.web_mentioned} 
+                    webMentioned={lead.web_mentioned}
+                    smtpBlocked={lead.smtp_blocked}
+                    provider={lead.provider}
+                    reason={lead.notes}
                   />
+                  {/* Mostrar señales DNS si hay verificación */}
+                  {lead.verification_status !== 'pending' && lead.signals && lead.signals.length > 0 && (
+                    <SignalsBadges signals={lead.signals} compact />
+                  )}
                   {/* Solo mostrar job status si es útil: error, en cola o ejecutando */}
                   {lead.last_job_status && ['failed', 'cancelled', 'running', 'queued'].includes(lead.last_job_status) && (
                     <div style={{ marginTop: '0.125rem' }}>

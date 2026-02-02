@@ -215,7 +215,7 @@
 							"path": [ "v1", "leads", ":lead_id" ],
 							"variable": [ { "key": "lead_id", "value": "1" } ]
 						},
-						"description": "Detalle de un lead por ID."
+						"description": "Lead detail by ID. Includes verification signals: mx_found, spf_present, dmarc_present, smtp_attempted, smtp_blocked, provider, signals[], notes (reason)."
 					}
 				},
 				{
@@ -290,7 +290,7 @@
 							"raw": "{\n  \"first_name\": \"Jane\",\n  \"last_name\": \"Doe\",\n  \"domain\": \"acme.com\"\n}"
 						},
 						"url": "{{base_url}}/v1/verify",
-						"description": "Verificación síncrona: devuelve candidatos y mejor email."
+						"description": "Synchronous verification: returns candidates and best email.\n\n**Response fields (best_result):**\n- `email`: Best email candidate\n- `status`: valid | invalid | risky | unknown\n- `confidence_score`: 0-100\n- `mx_found`: MX records found\n- `spf_present`: SPF record configured\n- `dmarc_present`: DMARC policy configured\n- `catch_all`: Domain accepts any mailbox (null if not tested)\n- `smtp_attempted`: SMTP probe was attempted\n- `smtp_blocked`: SMTP port 25 blocked at infra level\n- `provider`: google | microsoft | ionos | other\n- `web_mentioned`: Email found in public sources\n- `signals`: Array of detected signals [\"mx\", \"spf\", \"dmarc\", \"provider:google\"]\n- `reason`: Human-readable explanation"
 					}
 				}
 			]
@@ -569,7 +569,7 @@
 							"raw": "{\n  \"first_name\": \"Jane\",\n  \"last_name\": \"Doe\",\n  \"domain\": \"acme.com\"\n}"
 						},
 						"url": "{{base_url}}/v1/verify",
-						"description": "Verificación con API Key (scope verify:run)."
+						"description": "Verification with API Key (scope verify:run). Returns rich signals: mx_found, spf_present, dmarc_present, provider, smtp_blocked, signals[], reason."
 					}
 				}
 			]

@@ -18,6 +18,7 @@ select = [
 ]
 ignore = [
     "E501",   # line too long (handled by formatter)
+    "W292",   # no newline at end of file (cosmetic, avoids unnecessary commits)
     "B008",   # function call in default argument (FastAPI Depends)
     "SIM105", # contextlib.suppress - sometimes try/except is clearer
     "SIM108", # ternary operator - sometimes if/else is more readable

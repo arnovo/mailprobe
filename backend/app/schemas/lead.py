@@ -90,11 +90,20 @@ class LeadResponse(BaseModel):
     email_candidates: list[str] | None = None
     verification_status: str
     confidence_score: int
+    # DNS signals
     mx_found: bool
-    catch_all: bool
-    smtp_check: bool
-    notes: str
+    spf_present: bool = False
+    dmarc_present: bool = False
+    # SMTP signals
+    catch_all: bool | None = None  # None if not attempted (backward compat: bool)
+    smtp_check: bool  # deprecated, kept for backward compatibility
+    smtp_attempted: bool = False
+    smtp_blocked: bool = False
+    # Additional signals
+    provider: str = "other"
     web_mentioned: bool = False
+    signals: list[str] = []  # ["mx", "spf", "dmarc", "web"]
+    notes: str
     tags: list[str] | None = None
     sales_status: str
     source: str
