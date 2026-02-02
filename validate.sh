@@ -21,6 +21,32 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# =============================================================================
+# PRE-COMMIT HOOK SYNC
+# =============================================================================
+HOOK_SOURCE="scripts/pre-commit.sh"
+HOOK_DEST=".git/hooks/pre-commit"
+
+if [ -f "$HOOK_SOURCE" ]; then
+    NEEDS_INSTALL=false
+    
+    if [ ! -f "$HOOK_DEST" ]; then
+        # Hook no existe
+        NEEDS_INSTALL=true
+        echo -e "${YELLOW}→ Pre-commit hook no instalado${NC}"
+    elif ! diff -q "$HOOK_SOURCE" "$HOOK_DEST" > /dev/null 2>&1; then
+        # Hook existe pero hay diferencias
+        NEEDS_INSTALL=true
+        echo -e "${YELLOW}→ Pre-commit hook desactualizado${NC}"
+    fi
+    
+    if [ "$NEEDS_INSTALL" = true ]; then
+        cp "$HOOK_SOURCE" "$HOOK_DEST"
+        chmod +x "$HOOK_DEST"
+        echo -e "${GREEN}✓ Pre-commit hook instalado/actualizado${NC}"
+    fi
+fi
+
 # Parse arguments
 FIX_MODE=""
 SKIP_TESTS=false
