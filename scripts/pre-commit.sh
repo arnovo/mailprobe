@@ -119,6 +119,22 @@ if [ -n "$FRONTEND_CHANGED" ]; then
 fi
 
 # ============================================
+# 5b. Frontend unit tests (Vitest)
+# ============================================
+if [ -n "$FRONTEND_CHANGED" ]; then
+    echo -e "${YELLOW}▶ Running unit tests (frontend)...${NC}"
+    cd frontend
+    if npm run test; then
+        echo -e "${GREEN}✓ frontend tests OK${NC}"
+    else
+        echo -e "${RED}✗ frontend tests failed${NC}"
+        cd ..
+        exit 1
+    fi
+    cd ..
+fi
+
+# ============================================
 # 6. Backend tests (pytest)
 # ============================================
 if [ -n "$BACKEND_CHANGED" ]; then
