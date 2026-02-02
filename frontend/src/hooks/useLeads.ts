@@ -13,7 +13,22 @@ export interface Lead {
   domain: string;
   email_best: string;
   verification_status: string;
+  confidence_score: number;
+  // DNS signals
+  mx_found: boolean;
+  spf_present: boolean;
+  dmarc_present: boolean;
+  // SMTP signals
+  catch_all: boolean | null;
+  smtp_check: boolean;
+  smtp_attempted: boolean;
+  smtp_blocked: boolean;
+  // Additional signals
+  provider: string;
   web_mentioned: boolean;
+  signals: string[];
+  notes: string;
+  // Job status
   last_job_status: string | null;
   linkedin_url?: string;
   job_title?: string;
