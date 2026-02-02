@@ -488,6 +488,61 @@ pip install -r requirements.txt
 pytest -v
 ```
 
+## Desarrollo
+
+### Git Hooks
+
+El proyecto incluye hooks de git que se instalan automáticamente con `./validate.sh`:
+
+| Hook | Archivo fuente | Validaciones |
+|------|----------------|--------------|
+| **pre-commit** | `scripts/pre-commit.sh` | Secretos, tamaño archivos, ruff, eslint, TypeScript, pytest, conteo de tests |
+| **pre-push** | `scripts/pre-push.sh` | Formato de commits (Conventional Commits), advertencia push a main |
+
+Instalación manual:
+
+```bash
+cp scripts/pre-commit.sh .git/hooks/pre-commit
+cp scripts/pre-push.sh .git/hooks/pre-push
+chmod +x .git/hooks/pre-commit .git/hooks/pre-push
+```
+
+### Regla de tests
+
+Cada commit que modifique código Python en `backend/app/` **debe añadir al menos 1 test nuevo**. El pre-commit lo verifica automáticamente.
+
+Para commits que no requieren tests (typos, config, frontend-only):
+
+```bash
+# Saltar solo la verificación de tests (el resto de validaciones sigue activo)
+SKIP_TEST_COUNT=1 git commit -m "fix: typo en mensaje"
+```
+
+### Pull Requests
+
+El proyecto incluye un template de PR en `.github/PULL_REQUEST_TEMPLATE.md`. Para validar antes de crear un PR:
+
+```bash
+./scripts/validate-pr.sh [base-branch]
+```
+
+El script verifica:
+- Rama correcta (no main)
+- Commits siguen Conventional Commits
+- Tests pasan
+- Linting OK
+- Sin secretos
+
+### Validación completa
+
+```bash
+./validate.sh              # Valida todo (instala hooks si faltan)
+./validate.sh --fix        # Auto-fix linters
+./validate.sh --skip-tests # Sin tests (más rápido)
+./validate.sh --backend    # Solo backend
+./validate.sh --frontend   # Solo frontend
+```
+
 ## Despliegue (Render / Fly / DO)
 
 - **Backend:** servicio Web (uvicorn). Variables: `DATABASE_URL`, `REDIS_URL`, `CELERY_BROKER_URL`, `JWT_SECRET_KEY`, `CORS_ORIGINS` (incluye localhost:3001 y :3002 para front prod y dev).

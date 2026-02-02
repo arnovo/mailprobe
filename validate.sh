@@ -22,30 +22,37 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # =============================================================================
-# PRE-COMMIT HOOK SYNC
+# GIT HOOKS SYNC
 # =============================================================================
-HOOK_SOURCE="scripts/pre-commit.sh"
-HOOK_DEST=".git/hooks/pre-commit"
 
-if [ -f "$HOOK_SOURCE" ]; then
-    NEEDS_INSTALL=false
+# Función para instalar/actualizar un hook
+install_hook() {
+    local HOOK_NAME=$1
+    local HOOK_SOURCE="scripts/${HOOK_NAME}.sh"
+    local HOOK_DEST=".git/hooks/${HOOK_NAME}"
     
-    if [ ! -f "$HOOK_DEST" ]; then
-        # Hook no existe
-        NEEDS_INSTALL=true
-        echo -e "${YELLOW}→ Pre-commit hook no instalado${NC}"
-    elif ! diff -q "$HOOK_SOURCE" "$HOOK_DEST" > /dev/null 2>&1; then
-        # Hook existe pero hay diferencias
-        NEEDS_INSTALL=true
-        echo -e "${YELLOW}→ Pre-commit hook desactualizado${NC}"
+    if [ -f "$HOOK_SOURCE" ]; then
+        NEEDS_INSTALL=false
+        
+        if [ ! -f "$HOOK_DEST" ]; then
+            NEEDS_INSTALL=true
+            echo -e "${YELLOW}→ ${HOOK_NAME} hook no instalado${NC}"
+        elif ! diff -q "$HOOK_SOURCE" "$HOOK_DEST" > /dev/null 2>&1; then
+            NEEDS_INSTALL=true
+            echo -e "${YELLOW}→ ${HOOK_NAME} hook desactualizado${NC}"
+        fi
+        
+        if [ "$NEEDS_INSTALL" = true ]; then
+            cp "$HOOK_SOURCE" "$HOOK_DEST"
+            chmod +x "$HOOK_DEST"
+            echo -e "${GREEN}✓ ${HOOK_NAME} hook instalado/actualizado${NC}"
+        fi
     fi
-    
-    if [ "$NEEDS_INSTALL" = true ]; then
-        cp "$HOOK_SOURCE" "$HOOK_DEST"
-        chmod +x "$HOOK_DEST"
-        echo -e "${GREEN}✓ Pre-commit hook instalado/actualizado${NC}"
-    fi
-fi
+}
+
+# Instalar hooks
+install_hook "pre-commit"
+install_hook "pre-push"
 
 # Parse arguments
 FIX_MODE=""
