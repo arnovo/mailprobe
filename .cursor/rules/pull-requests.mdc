@@ -1,0 +1,104 @@
+# Pull Request Standards
+
+## Crear PRs
+
+Cuando el usuario pida crear un PR, seguir este flujo:
+
+1. **Verificar rama y commits**
+   ```bash
+   git status
+   git log --oneline main..HEAD
+   git diff main...HEAD --stat
+   ```
+
+2. **Generar descripción desde commits**
+   - Tipo: según los prefijos de commits (feat/fix/refactor/etc.)
+   - Resumen: sintetizar los cambios en 1-3 frases
+   - Cambios principales: extraer de los commits
+
+3. **Usar el template**
+   - El template está en `.github/PULL_REQUEST_TEMPLATE.md`
+   - Rellenar TODAS las secciones relevantes
+   - Marcar los checkboxes que apliquen
+
+## Estructura del PR
+
+```markdown
+## Resumen
+[1-3 frases describiendo el cambio]
+
+## Tipo de cambio
+- [x] feat: Nueva funcionalidad
+
+## Cambios principales
+- Cambio 1
+- Cambio 2
+
+## Archivos afectados
+| Área | Archivos |
+|------|----------|
+| Backend | api/, services/ |
+| Frontend | components/ |
+
+## Testing
+- [x] Tests unitarios pasan
+- [x] Probado manualmente en local
+
+## Checklist
+- [x] Código sigue convenciones
+- [x] Commits siguen Conventional Commits
+```
+
+## Comando para crear PR
+
+```bash
+gh pr create --title "tipo(scope): descripción corta" --body "$(cat <<'EOF'
+[Contenido del template rellenado]
+EOF
+)"
+```
+
+## Validación antes de PR
+
+Antes de crear el PR, verificar:
+
+1. **Todos los tests pasan**
+   ```bash
+   cd backend && .venv/bin/python -m pytest tests/ -v
+   ```
+
+2. **Sin errores de linting**
+   ```bash
+   cd backend && .venv/bin/python -m ruff check app/
+   cd frontend && npx tsc --noEmit
+   ```
+
+3. **Commits siguen Conventional Commits**
+   ```bash
+   git log --oneline main..HEAD
+   ```
+
+4. **No hay secretos**
+   - Revisar que no hay API keys, passwords, tokens en el código
+
+## Títulos de PR
+
+Seguir el mismo formato que commits:
+
+```
+tipo(scope): descripción imperativa en minúsculas
+
+Ejemplos:
+feat(verification): add SMTP blocked detection
+fix(leads): resolve duplicate email handling
+refactor(api): simplify auth middleware
+docs: update README with deployment guide
+```
+
+## Labels sugeridos
+
+- `enhancement` - Nueva funcionalidad
+- `bug` - Corrección de bug
+- `documentation` - Solo docs
+- `refactor` - Refactorización
+- `breaking-change` - Cambio que rompe compatibilidad
