@@ -1,35 +1,35 @@
-## Resumen
+## Summary
 
-<!-- Describe brevemente qué hace este PR (1-3 frases) -->
+<!-- Briefly describe what this PR does (1-3 sentences) -->
 
 
-## Tipo de cambio
+## Change Type
 
-<!-- Marca con [x] el tipo que aplique -->
+<!-- Check the type(s) that apply with [x] -->
 
-- [ ] `feat`: Nueva funcionalidad
-- [ ] `fix`: Corrección de bug
-- [ ] `refactor`: Refactorización (sin cambio de comportamiento)
-- [ ] `docs`: Documentación
-- [ ] `style`: Formato/estilo (sin cambio de lógica)
-- [ ] `test`: Tests nuevos o actualizados
-- [ ] `build`: Cambios en build/dependencias
-- [ ] `ci`: Cambios en CI/CD
+- [ ] `feat`: New feature
+- [ ] `fix`: Bug fix
+- [ ] `refactor`: Refactoring (no behavior change)
+- [ ] `docs`: Documentation
+- [ ] `style`: Formatting/style (no logic change)
+- [ ] `test`: New or updated tests
+- [ ] `build`: Build/dependency changes
+- [ ] `ci`: CI/CD changes
 
-## Cambios principales
+## Main Changes
 
-<!-- Lista los cambios más importantes -->
+<!-- List the most important changes -->
 
 - 
 - 
 - 
 
-## Archivos afectados
+## Files Affected
 
-<!-- Resumen de qué partes del código cambian -->
+<!-- Summary of which parts of the code change -->
 
-| Área | Archivos |
-|------|----------|
+| Area | Files |
+|------|-------|
 | Backend | |
 | Frontend | |
 | Tests | |
@@ -37,29 +37,29 @@
 
 ## Testing
 
-<!-- Describe cómo se probó este cambio -->
+<!-- Describe how this change was tested -->
 
-- [ ] Tests unitarios pasan (`pytest tests/`)
-- [ ] Tests de integración pasan
-- [ ] Probado manualmente en local
-- [ ] Frontend sin errores TypeScript (`npx tsc --noEmit`)
+- [ ] Unit tests pass (`pytest tests/`)
+- [ ] Integration tests pass
+- [ ] Manually tested locally
+- [ ] Frontend has no TypeScript errors (`npx tsc --noEmit`)
 
 ## Checklist
 
-<!-- Verifica antes de solicitar review -->
+<!-- Verify before requesting review -->
 
-- [ ] El código sigue las convenciones del proyecto
-- [ ] Los commits siguen Conventional Commits
-- [ ] No hay secretos/credenciales en el código
-- [ ] La documentación está actualizada (si aplica)
-- [ ] Los tests cubren los cambios nuevos
+- [ ] Code follows project conventions
+- [ ] Commits follow Conventional Commits
+- [ ] No secrets/credentials in code
+- [ ] Documentation updated (if applicable)
+- [ ] Tests cover new changes
 
-## Notas para el reviewer
+## Notes for Reviewer
 
-<!-- Algo que el reviewer deba saber: decisiones técnicas, trade-offs, áreas de riesgo -->
+<!-- Anything the reviewer should know: technical decisions, trade-offs, risk areas -->
 
 
-## Screenshots (si aplica)
+## Screenshots (if applicable)
 
-<!-- Para cambios de UI, añade capturas antes/después -->
+<!-- For UI changes, add before/after screenshots -->
 
