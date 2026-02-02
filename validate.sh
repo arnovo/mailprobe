@@ -25,7 +25,7 @@ NC='\033[0m' # No Color
 # GIT HOOKS SYNC
 # =============================================================================
 
-# Función para instalar/actualizar un hook
+# Function to install/update a hook
 install_hook() {
     local HOOK_NAME=$1
     local HOOK_SOURCE="scripts/${HOOK_NAME}.sh"
@@ -36,21 +36,21 @@ install_hook() {
         
         if [ ! -f "$HOOK_DEST" ]; then
             NEEDS_INSTALL=true
-            echo -e "${YELLOW}→ ${HOOK_NAME} hook no instalado${NC}"
+            echo -e "${YELLOW}→ ${HOOK_NAME} hook not installed${NC}"
         elif ! diff -q "$HOOK_SOURCE" "$HOOK_DEST" > /dev/null 2>&1; then
             NEEDS_INSTALL=true
-            echo -e "${YELLOW}→ ${HOOK_NAME} hook desactualizado${NC}"
+            echo -e "${YELLOW}→ ${HOOK_NAME} hook outdated${NC}"
         fi
         
         if [ "$NEEDS_INSTALL" = true ]; then
             cp "$HOOK_SOURCE" "$HOOK_DEST"
             chmod +x "$HOOK_DEST"
-            echo -e "${GREEN}✓ ${HOOK_NAME} hook instalado/actualizado${NC}"
+            echo -e "${GREEN}✓ ${HOOK_NAME} hook installed/updated${NC}"
         fi
     fi
 }
 
-# Instalar hooks
+# Install hooks
 install_hook "pre-commit"
 install_hook "pre-push"
 
