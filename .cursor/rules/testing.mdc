@@ -6,12 +6,125 @@ alwaysApply: false
 
 # Testing Patterns
 
+## Regla Obligatoria: Añadir Tests
+
+**Cada commit que toque backend DEBE añadir al menos 1 test nuevo.**
+
+El pre-commit hook bloquea commits si no hay más tests que antes. Esto aplica a:
+- Nuevas funcionalidades → tests que cubran el happy path + edge cases
+- Refactors → tests que verifiquen que el comportamiento no cambió
+- Bug fixes → test que reproduzca el bug (y ahora pasa)
+
+### Excepciones (cómo saltarlo)
+
+Solo para cambios que **no afectan lógica**:
+- Typos en mensajes/comentarios
+- Cambios de formato/estilo
+- Actualizaciones de dependencias sin cambios de código
+
+```bash
+# Saltar SOLO el conteo de tests (el resto de validaciones sigue activo)
+SKIP_TEST_COUNT=1 git commit -m "fix(ui): typo en mensaje de error"
+```
+
+**NO uses `--no-verify`** salvo emergencias, ya que salta TODAS las validaciones.
+
+---
+
 ## Principles
 
 1. **Minimal mocking**: Only mock external I/O (network, SMTP, external APIs)
 2. **Real database**: PostgreSQL via testcontainers (SQLite fallback if Docker unavailable)
 3. **Factories with Faker**: Generate random realistic test data
 4. **Test behavior, not implementation**: Focus on inputs/outputs
+
+---
+
+## Ejemplos de Referencia
+
+Usa estos archivos como modelo según el tipo de test que necesites:
+
+### 1. Tests Unitarios Puros → `test_email_patterns.py`
+
+```python
+# tests/test_email_patterns.py
+class TestGenerateCandidates:
+    def test_handles_compound_names(self):
+        """Should handle compound first names."""
+        candidates = generate_candidates("Juan Carlos", "García", "example.com")
+        
+        assert len(candidates) > 0
+        assert any("juan" in c for c in candidates)
+```
+
+**Por qué es bueno:**
+- Sin mocks (funciones puras, sin I/O)
+- Nombres descriptivos (`test_handles_compound_names`)
+- Docstrings que explican el comportamiento esperado
+- Cubre happy path + edge cases (caracteres especiales, espacios, etc.)
+- Estructura con clase que agrupa tests relacionados
+
+### 2. Tests de Integración con DB/API → `test_leads_flow.py`
+
+```python
+# tests/test_leads_flow.py
+class TestLeadsAPI:
+    @pytest.mark.asyncio
+    async def test_leads_isolation_between_workspaces(self, client, db_session, auth_setup):
+        """Leads should be isolated between workspaces."""
+        workspace1 = auth_setup["workspace"]
+        workspace2 = await create_workspace(db_session, name="Other Workspace")
+
+        await create_lead(db_session, workspace=workspace1, first_name="Lead1")
+        await create_lead(db_session, workspace=workspace2, first_name="Lead2")
+        await db_session.commit()
+
+        response = await client.get("/v1/leads", headers=auth_setup["headers"])
+        lead_names = [lead["first_name"] for lead in response.json()["data"]["items"]]
+
+        assert "Lead1" in lead_names
+        assert "Lead2" not in lead_names  # Aislamiento!
+```
+
+**Por qué es bueno:**
+- DB real (no mock) vía fixtures
+- Factories para crear datos: `create_lead`, `create_workspace`
+- Test de seguridad (aislamiento entre workspaces)
+- Fixture reutilizable `auth_setup` con user + token + headers
+- Verifica comportamiento end-to-end
+
+### 3. Tests con Mocks de Red → `test_verification_flow.py` + `mocks.py`
+
+```python
+# tests/mocks.py - Fixtures reutilizables
+@pytest.fixture
+def mock_dns_valid(monkeypatch):
+    """Mock DNS resolver to return valid MX records."""
+    def fake_resolve(domain: str, rdtype: str, lifetime: float = None):
+        if rdtype == "MX":
+            return FakeDNSAnswer([FakeMXRecord(10, f"mail.{domain}.")])
+        # ...
+    monkeypatch.setattr("dns.resolver.resolve", fake_resolve)
+
+# tests/test_verification_flow.py - Usa los mocks
+class TestVerifyEmail:
+    def test_valid_email_with_mocked_network(self, mock_dns_valid, mock_smtp_valid):
+        """Should validate email with mocked DNS and SMTP."""
+        result = verify_email("john.doe@example.com")
+        
+        assert result.status in ("valid", "risky", "unknown")
+        assert result.mx_found
+        assert result.smtp_check
+```
+
+**Por qué es bueno:**
+- Mocks SOLO de I/O externo (DNS, SMTP) - no de lógica interna
+- Clases Fake simples y claras (`FakeSMTP`, `FakeDNSAnswer`)
+- Fixtures reutilizables en `mocks.py`
+- Tests cubren: válido, rechazado, timeout, catch-all, sin MX
+- `pytest_plugins = ["tests.mocks"]` para cargar fixtures
+
+---
 
 ## Test Structure
 
