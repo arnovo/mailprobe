@@ -490,6 +490,16 @@ pytest -v
 
 ## Desarrollo
 
+### Branch Protection
+
+La rama `main` está protegida:
+- **No se permiten commits directos** (requiere PR)
+- **CI debe pasar** (`backend-tests`, `frontend-tests`) antes de mergear
+- **Aplica a todos**, incluidos admins
+- **Force push bloqueado**
+
+GitHub Actions solo se ejecuta en PRs (no en push a main).
+
 ### Git Hooks
 
 El proyecto incluye hooks de git que se instalan automáticamente con `./validate.sh`:
@@ -497,7 +507,7 @@ El proyecto incluye hooks de git que se instalan automáticamente con `./validat
 | Hook | Archivo fuente | Validaciones |
 |------|----------------|--------------|
 | **pre-commit** | `scripts/pre-commit.sh` | Secretos, tamaño archivos, ruff, eslint, TypeScript, pytest, conteo de tests |
-| **pre-push** | `scripts/pre-push.sh` | Formato de commits (Conventional Commits), advertencia push a main |
+| **pre-push** | `scripts/pre-push.sh` | Formato de commits (Conventional Commits) |
 
 Instalación manual:
 
