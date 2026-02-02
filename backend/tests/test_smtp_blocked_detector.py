@@ -243,8 +243,9 @@ class TestBackwardCompatibility:
 
     def test_lead_response_schema_backward_compatible(self):
         """LeadResponse should maintain backward compatibility."""
-        from app.schemas.lead import LeadResponse
         from datetime import datetime
+
+        from app.schemas.lead import LeadResponse
 
         # All required fields for LeadResponse
         lead_data = {
