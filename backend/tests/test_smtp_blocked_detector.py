@@ -190,5 +190,99 @@ class TestSmtpBlockedDetectorUnit:
         assert TTL_BLOCKED_SECONDS <= 1800
 
 
+class TestBackwardCompatibility:
+    """Tests to ensure backward compatibility for API consumers."""
+
+    def test_verify_result_serializable_without_new_fields(self):
+        """Old clients should work without new fields (defaults used)."""
+        result = VerifyResult(
+            email="test@example.com",
+            status="risky",
+            reason="Test",
+            confidence_score=60,
+            mx_found=True,
+        )
+
+        # Simulate old client accessing only original fields
+        data = {
+            "email": result.email,
+            "status": result.status,
+            "confidence_score": result.confidence_score,
+            "mx_found": result.mx_found,
+            "smtp_check": result.smtp_check,  # deprecated but kept
+        }
+
+        assert data["email"] == "test@example.com"
+        assert data["status"] == "risky"
+        assert data["confidence_score"] == 60
+        assert data["mx_found"] is True
+        assert data["smtp_check"] is False  # default
+
+    def test_verify_candidate_schema_has_defaults(self):
+        """VerifyCandidate schema should have sensible defaults."""
+        from app.schemas.verify import VerifyCandidate
+
+        # Minimal data (old client might send)
+        candidate = VerifyCandidate(
+            email="test@example.com",
+            status="valid",
+            confidence_score=90,
+        )
+
+        # New fields should have defaults
+        assert candidate.mx_found is False  # default
+        assert candidate.spf_present is False
+        assert candidate.dmarc_present is False
+        assert candidate.catch_all is None
+        assert candidate.smtp_attempted is False
+        assert candidate.smtp_blocked is False
+        assert candidate.provider == "other"
+        assert candidate.web_mentioned is False
+        assert candidate.signals == []
+        assert candidate.reason == ""
+
+    def test_lead_response_schema_backward_compatible(self):
+        """LeadResponse should maintain backward compatibility."""
+        from app.schemas.lead import LeadResponse
+        from datetime import datetime
+
+        # All required fields for LeadResponse
+        lead_data = {
+            "id": 1,
+            "workspace_id": 1,
+            "first_name": "John",
+            "last_name": "Doe",
+            "company": "Test Inc",
+            "domain": "test.com",
+            "email_best": "john.doe@test.com",
+            "verification_status": "valid",
+            "confidence_score": 85,
+            "mx_found": True,
+            "catch_all": False,
+            "smtp_check": True,
+            "notes": "",
+            "sales_status": "new",
+            "source": "manual",
+            "title": "Engineer",
+            "linkedin_url": "",
+            "lawful_basis": "legitimate_interest",
+            "purpose": "sales",
+            "opt_out": False,
+            "created_at": datetime.now(),
+            "updated_at": datetime.now(),
+        }
+
+        # Should not raise - new fields have defaults
+        lead = LeadResponse(**lead_data)
+
+        # New fields should have defaults
+        assert lead.spf_present is False
+        assert lead.dmarc_present is False
+        assert lead.smtp_attempted is False
+        assert lead.smtp_blocked is False
+        assert lead.provider == "other"
+        assert lead.signals == []
+
+
 # Import mocks from mocks.py
 pytest_plugins = ["tests.mocks"]
