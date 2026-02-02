@@ -22,11 +22,11 @@ router = APIRouter()
 
 @router.get("", response_model=APIResponse, dependencies=[require_scope("leads:read")])
 async def list_jobs(
-    active_only: bool = Query(False, description="Si true, solo jobs en estado queued o running"),
+    active_only: bool = Query(False, description="If true, only jobs in queued or running state"),
     db: AsyncSession = Depends(get_db),
     workspace_required: tuple = Depends(get_workspace_required),
 ) -> APIResponse:
-    """Lista jobs del workspace del usuario. Con active_only=true solo devuelve los activos (queued|running)."""
+    """List workspace jobs for the user. With active_only=true only returns active jobs (queued|running)."""
     workspace, _, _ = workspace_required
     q = select(Job).where(Job.workspace_id == workspace.id).order_by(Job.created_at.desc())
     if active_only:

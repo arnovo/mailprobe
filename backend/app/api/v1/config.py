@@ -1,4 +1,4 @@
-"""Workspace verification config: GET/PUT por workspace (tabla clave-valor)."""
+"""Workspace verification config: GET/PUT per workspace (key-value table)."""
 
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ async def get_config(
     db: AsyncSession = Depends(get_db),
     workspace_required: tuple = Depends(get_workspace_required),
 ) -> APIResponse:
-    """Config del workspace (fusionada con globales)."""
+    """Workspace config (merged with globals)."""
     workspace, _, _ = workspace_required
     r = await db.execute(select(WorkspaceConfigEntry).where(WorkspaceConfigEntry.workspace_id == workspace.id))
     entries = list(r.scalars().all())
@@ -43,7 +43,7 @@ async def update_config(
     db: AsyncSession = Depends(get_db),
     workspace_required: tuple = Depends(get_workspace_required),
 ) -> APIResponse:
-    """Actualiza config del workspace. Cada clave se guarda como registro; null/vacío = borrar (usar global)."""
+    """Updates workspace config. Each key is saved as a record; null/empty = delete (use global)."""
     workspace, _, _ = workspace_required
     r = await db.execute(select(WorkspaceConfigEntry).where(WorkspaceConfigEntry.workspace_id == workspace.id))
     entries_by_key = {e.key: e for e in r.scalars().all()}

@@ -21,6 +21,6 @@ class Job(Base):
     progress: Mapped[int] = mapped_column(default=0, nullable=False)  # 0-100
     result: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     error: Mapped[str] = mapped_column(Text, nullable=False, default="")
-    log_lines: Mapped[list | None] = mapped_column(JSON, nullable=True)  # ["Verificando dominio...", ...]
+    log_lines: Mapped[list | None] = mapped_column(JSON, nullable=True)  # ["Verifying domain...", ...]
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))

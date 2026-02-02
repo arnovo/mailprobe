@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 engine = create_engine(s.database_url_sync, pool_pre_ping=True)
 SessionLocal = sessionmaker(engine, autocommit=False, autoflush=False)
 
-# Verificación puede tardar mucho (DNS, varios MX, SMTP por candidato). Límite por tarea: 10 min soft, 11 min hard.
+# Verification can take a while (DNS, multiple MX, SMTP per candidate). Task limit: 10 min soft, 11 min hard.
 VERIFY_SOFT_TIME_LIMIT = 600
 VERIFY_TIME_LIMIT = 660
 
@@ -45,9 +45,9 @@ def _append_log(
     level: str | None = None,
     visibility: str | None = None,
 ) -> None:
-    """Añade una línea al job (JSON log_lines) y a la tabla job_log_lines.
-    visibility: "public" (todos) o "superadmin" (solo superadmin; logs más detallados/comprometedores).
-    Requiere migraciones 004 y 005 aplicadas (tabla job_log_lines y columna visibility).
+    """Append a line to the job (JSON log_lines) and to job_log_lines table.
+    visibility: "public" (everyone) or "superadmin" (superadmin only; detailed/sensitive logs).
+    Requires migrations 004 and 005 applied (job_log_lines table and visibility column).
     """
     from app.models import JobLogLine
 
@@ -60,7 +60,7 @@ def _append_log(
 
 
 def _mark_job_failed(db: Session, job_id: str, workspace_id: int, reason: str) -> None:
-    """Actualiza el job a failed y hace commit."""
+    """Update job to failed and commit."""
     from app.models import Job
 
     r = db.execute(select(Job).where(Job.job_id == job_id, Job.workspace_id == workspace_id))
@@ -91,10 +91,10 @@ def run_verify_lead(self, lead_id: int, workspace_id: int, job_id: str):
         _append_log(
             db,
             job,
-            f"Job iniciado — tipo: verify, lead_id: {lead_id}, workspace_id: {workspace_id}",
+            f"Job started — type: verify, lead_id: {lead_id}, workspace_id: {workspace_id}",
             visibility="public",
         )
-        _append_log(db, job, "Iniciando verificación...", visibility="public")
+        _append_log(db, job, "Starting verification...", visibility="public")
         _append_log(
             db,
             job,
@@ -107,7 +107,7 @@ def run_verify_lead(self, lead_id: int, workspace_id: int, job_id: str):
         lead = r.scalars().one_or_none()
         if not lead or lead.opt_out:
             _append_log(
-                db, job, "Error detectado: Lead no encontrado o con opt-out.", level="error", visibility="public"
+                db, job, "Error: Lead not found or opted out.", level="error", visibility="public"
             )
             job.status = "failed"
             job.error = "Lead not found or opted out"
@@ -122,11 +122,11 @@ def run_verify_lead(self, lead_id: int, workspace_id: int, job_id: str):
             visibility="superadmin",
         )
         db.commit()
-        _append_log(db, job, "Verificando dominio...", visibility="public")
+        _append_log(db, job, "Verifying domain...", visibility="public")
         db.commit()
-        _append_log(db, job, "Generando candidatos de email...", visibility="public")
+        _append_log(db, job, "Generating email candidates...", visibility="public")
         db.commit()
-        _append_log(db, job, "Comprobando servidor de correo (MX/SMTP)...", visibility="public")
+        _append_log(db, job, "Checking mail server (MX/SMTP)...", visibility="public")
         cfg = get_workspace_config_sync(db, workspace_id)
         _append_log(
             db,
@@ -150,7 +150,7 @@ def run_verify_lead(self, lead_id: int, workspace_id: int, job_id: str):
             db.commit()
 
         def _on_web_search(provider: str) -> None:
-            """Callback para trackear uso de búsqueda web (Serper)."""
+            """Callback to track web search usage (Serper)."""
             if provider == "serper":
                 from app.services.serper_usage import increment_serper_usage_sync
 
@@ -182,12 +182,12 @@ def run_verify_lead(self, lead_id: int, workspace_id: int, job_id: str):
                 db,
                 job_id,
                 workspace_id,
-                "Tiempo de ejecución excedido (timeout). La verificación tardó más de lo permitido.",
+                "Execution time exceeded (timeout). Verification took longer than allowed.",
             )
             return
         except Exception as e:
             err_msg = str(e)[:500]
-            _append_log(db, job, f"Error detectado: {err_msg}", level="error", visibility="public")
+            _append_log(db, job, f"Error: {err_msg}", level="error", visibility="public")
             job.status = "failed"
             job.error = err_msg
             db.commit()
@@ -212,14 +212,14 @@ def run_verify_lead(self, lead_id: int, workspace_id: int, job_id: str):
             _append_log(db, job, f"[DEBUG] mx_lookup: {len(mx_hosts)} hosts", visibility="superadmin")
         db.commit()
 
-        # Log MX/SMTP: resumen público; detalle por candidato solo superadmin (emails/estados más comprometedores)
+        # Log MX/SMTP: public summary; per-candidate detail superadmin only (sensitive emails/statuses)
         _append_log(
-            db, job, "Registros MX: " + (", ".join(mx_hosts) if mx_hosts else "(no encontrados)"), visibility="public"
+            db, job, "MX records: " + (", ".join(mx_hosts) if mx_hosts else "(not found)"), visibility="public"
         )
         db.commit()
         for i, (email, info) in enumerate(probe_results.items()):
             if i >= 15:
-                _append_log(db, job, f"  ... y {len(probe_results) - 15} candidatos más", visibility="superadmin")
+                _append_log(db, job, f"  ... and {len(probe_results) - 15} more candidates", visibility="superadmin")
                 break
             status = info.get("status", "?")
             detail = (info.get("detail") or "")[:100]
@@ -249,7 +249,7 @@ def run_verify_lead(self, lead_id: int, workspace_id: int, job_id: str):
         lead.updated_at = datetime.now(UTC)
 
         _append_log(
-            db, job, f"Verificación completada. Mejor email: {lead.email_best or '(ninguno)'}", visibility="public"
+            db, job, f"Verification completed. Best email: {lead.email_best or '(none)'}", visibility="public"
         )
         job.status = "succeeded"
         job.progress = 100

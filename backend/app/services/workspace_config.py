@@ -1,4 +1,4 @@
-"""Workspace config: clave-valor (entries). Merge con valores globales."""
+"""Workspace config: key-value (entries). Merge with global values."""
 
 from __future__ import annotations
 
@@ -12,17 +12,17 @@ from app.core.config import settings
 from app.models import WorkspaceConfigEntry
 from app.services.email_patterns import COMMON_PATTERNS
 
-# Límites (coinciden con schemas/config.py)
+# Limits (match schemas/config.py)
 MAX_TIMEOUT_SECONDS = 30
 MIN_TIMEOUT_SECONDS = 1
 MIN_PATTERNS_ENABLED = 5
 PATTERN_COUNT = 10
 
-# Claves conocidas y cómo parsear el valor. Añadir aquí nuevas claves sin migración.
-# web_search_provider: 'bing' | 'serper' | '' (vacío = no buscar)
-# web_search_api_key: clave del provider
-# allow_no_lastname: permite generar candidatos cuando no hay apellido (info@, contact@, etc.)
-# custom_patterns: patrones adicionales definidos por el workspace (lista JSON de strings)
+# Known keys and how to parse the value. Add new keys here without migration.
+# web_search_provider: 'bing' | 'serper' | '' (empty = no search)
+# web_search_api_key: provider key
+# allow_no_lastname: allows generating candidates when there's no last name (info@, contact@, etc.)
+# custom_patterns: additional patterns defined by the workspace (JSON list of strings)
 CONFIG_KEYS = {
     "smtp_timeout_seconds": {"type": int, "default": lambda: getattr(settings, "smtp_timeout_seconds", 5)},
     "dns_timeout_seconds": {"type": float, "default": lambda: getattr(settings, "dns_timeout_seconds", 5.0)},
@@ -35,7 +35,7 @@ CONFIG_KEYS = {
 }
 
 
-MAX_CUSTOM_PATTERNS = 20  # Límite de patrones personalizados por workspace
+MAX_CUSTOM_PATTERNS = 20  # Limit of custom patterns per workspace
 
 
 def _parse_value(key: str, raw: str) -> Any:
@@ -56,7 +56,7 @@ def _parse_value(key: str, raw: str) -> Any:
         patterns = json.loads(raw)
         if not isinstance(patterns, list):
             return []
-        # Validar y limpiar patrones: deben contener {first}, {last}, {f}, {l} o {domain}
+        # Validate and clean patterns: must contain {first}, {last}, {f}, {l} or {domain}
         valid = []
         for p in patterns:
             if isinstance(p, str) and "@{domain}" in p and len(p) <= 100:
@@ -67,8 +67,8 @@ def _parse_value(key: str, raw: str) -> Any:
 
 def get_workspace_config_sync(db: Session, workspace_id: int) -> dict[str, Any]:
     """
-    Devuelve la config del workspace fusionada con globales.
-    Lee todos los registros de workspace_config_entries para ese workspace y aplica tipos/defaults.
+    Returns the workspace config merged with globals.
+    Reads all workspace_config_entries records for that workspace and applies types/defaults.
     Keys: smtp_timeout_seconds, dns_timeout_seconds, enabled_pattern_indices, smtp_mail_from.
     """
     r = db.execute(select(WorkspaceConfigEntry).where(WorkspaceConfigEntry.workspace_id == workspace_id))
@@ -91,12 +91,12 @@ def get_workspace_config_sync(db: Session, workspace_id: int) -> dict[str, Any]:
         if len(parsed) >= MIN_PATTERNS_ENABLED:
             indices = parsed
 
-    # Búsqueda web
+    # Web search
     web_search_provider = raw.get("web_search_provider", "").strip()
     web_search_api_key = raw.get("web_search_api_key", "").strip()
-    # Permitir leads sin apellido
+    # Allow leads without last name
     allow_no_lastname = raw.get("allow_no_lastname", "").strip().lower() in ("true", "1", "yes")
-    # Patrones personalizados del workspace
+    # Custom patterns from workspace
     custom_patterns: list[str] = []
     if "custom_patterns" in raw:
         custom_patterns = _parse_value("custom_patterns", raw["custom_patterns"])
