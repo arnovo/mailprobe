@@ -1,4 +1,5 @@
 """Application configuration."""
+
 from __future__ import annotations
 
 import json
@@ -22,12 +23,8 @@ class Settings(BaseSettings):
     api_v1_prefix: str = "/v1"
 
     # Database
-    database_url: str = Field(
-        default="postgresql+asyncpg://postgres:postgres@localhost:5432/mailprobe"
-    )
-    database_url_sync: str = Field(
-        default="postgresql://postgres:postgres@localhost:5432/mailprobe"
-    )
+    database_url: str = Field(default="postgresql+asyncpg://postgres:postgres@localhost:5432/mailprobe")
+    database_url_sync: str = Field(default="postgresql://postgres:postgres@localhost:5432/mailprobe")
 
     # Redis
     redis_url: str = "redis://localhost:6379/0"
@@ -53,7 +50,12 @@ class Settings(BaseSettings):
         if isinstance(v, str):
             v = v.strip()
             if not v:
-                return ["http://localhost:3001", "http://localhost:3000", "http://localhost:3002", "http://127.0.0.1:3002"]
+                return [
+                    "http://localhost:3001",
+                    "http://localhost:3000",
+                    "http://localhost:3002",
+                    "http://127.0.0.1:3002",
+                ]
             if v.startswith("["):
                 try:
                     return json.loads(v)

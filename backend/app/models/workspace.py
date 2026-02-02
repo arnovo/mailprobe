@@ -1,4 +1,5 @@
 """Workspace and WorkspaceUser models."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -33,7 +34,9 @@ class Workspace(Base):
     stripe_customer_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     stripe_subscription_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC)
+    )
 
     workspace_users: Mapped[list[WorkspaceUser]] = relationship("WorkspaceUser", back_populates="workspace")
     leads: Mapped[list[Lead]] = relationship("Lead", back_populates="workspace")

@@ -1,4 +1,5 @@
 """Basic API tests (no DB required)."""
+
 import pytest
 from httpx import AsyncClient
 

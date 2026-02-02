@@ -17,6 +17,11 @@ MAX_TIMEOUT_SECONDS = 30
 MIN_TIMEOUT_SECONDS = 1
 MIN_PATTERNS_ENABLED = 5
 PATTERN_COUNT = 10
+MAX_PATTERN_LENGTH = 100
+
+# API key masking
+API_KEY_MASK_THRESHOLD = 4
+API_KEY_MASK_CHARS = 8
 
 # Known keys and how to parse the value. Add new keys here without migration.
 # web_search_provider: 'bing' | 'serper' | '' (empty = no search)
@@ -59,7 +64,7 @@ def _parse_value(key: str, raw: str) -> Any:
         # Validate and clean patterns: must contain {first}, {last}, {f}, {l} or {domain}
         valid = []
         for p in patterns:
-            if isinstance(p, str) and "@{domain}" in p and len(p) <= 100:
+            if isinstance(p, str) and "@{domain}" in p and len(p) <= MAX_PATTERN_LENGTH:
                 valid.append(p.strip())
         return valid[:MAX_CUSTOM_PATTERNS]
     return raw
@@ -145,7 +150,9 @@ def merge_config_for_response(entries: list[WorkspaceConfigEntry]) -> dict[str, 
     web_search_api_key = raw.get("web_search_api_key", "").strip()
     # Mask API key for security
     web_search_api_key_masked = (
-        ("*" * 8 + web_search_api_key[-4:]) if len(web_search_api_key) > 4 else ("*" * len(web_search_api_key))
+        ("*" * API_KEY_MASK_CHARS + web_search_api_key[-API_KEY_MASK_THRESHOLD:])
+        if len(web_search_api_key) > API_KEY_MASK_THRESHOLD
+        else ("*" * len(web_search_api_key))
     )
     # Allow leads without last name
     allow_no_lastname = raw.get("allow_no_lastname", "").strip().lower() in ("true", "1", "yes")

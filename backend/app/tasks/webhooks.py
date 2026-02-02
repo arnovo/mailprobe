@@ -1,4 +1,5 @@
 """Webhook delivery with retries and DLQ."""
+
 from __future__ import annotations
 
 import json
@@ -12,6 +13,10 @@ from app.core.config import settings
 from app.core.security import compute_webhook_signature
 from app.tasks.celery_app import celery_app
 
+# HTTP status code ranges
+HTTP_SUCCESS_MIN = 200
+HTTP_SUCCESS_MAX = 300
+
 engine = create_engine(settings.database_url_sync, pool_pre_ping=True)
 SessionLocal = sessionmaker(engine, autocommit=False, autoflush=False)
 
@@ -23,6 +28,7 @@ def get_sync_session() -> Session:
 def dispatch_webhook_event(workspace_id: int, event: str, payload: dict[str, Any]) -> None:
     """Enqueue webhook deliveries for all hooks subscribed to event."""
     from app.models import Webhook
+
     db = get_sync_session()
     try:
         r = db.execute(select(Webhook).where(Webhook.workspace_id == workspace_id, Webhook.is_active.is_(True)))
@@ -41,6 +47,7 @@ def send_webhook_delivery(self, webhook_id: int, event: str, payload: dict):
     db = get_sync_session()
     try:
         from app.models import Webhook, WebhookDelivery
+
         r = db.execute(select(Webhook).where(Webhook.id == webhook_id))
         wh = r.scalars().one_or_none()
         if not wh or not wh.is_active:
@@ -55,7 +62,7 @@ def send_webhook_delivery(self, webhook_id: int, event: str, payload: dict):
                 headers=headers,
                 timeout=settings.webhook_timeout_seconds,
             )
-            success = 200 <= resp.status_code < 300
+            success = HTTP_SUCCESS_MIN <= resp.status_code < HTTP_SUCCESS_MAX
         except Exception as exc:
             success = False
             resp = None
@@ -76,6 +83,6 @@ def send_webhook_delivery(self, webhook_id: int, event: str, payload: dict):
         db.commit()
 
         if not success and self.request.retries < self.max_retries:
-            raise self.retry(countdown=2 ** self.request.retries)
+            raise self.retry(countdown=2**self.request.retries)
     finally:
         db.close()

@@ -1,4 +1,5 @@
 """Web search for email mentions: Bing and Serper.dev providers."""
+
 from __future__ import annotations
 
 from urllib.parse import quote_plus
@@ -9,7 +10,7 @@ import requests
 def check_email_bing(email: str, api_key: str, timeout_seconds: float = 3.0) -> tuple[bool, str | None]:
     """
     Search for email in Bing Web Search API v7 (deprecated August 2025).
-    
+
     Returns:
         (found, error_msg) - found is True if email was found in search results
     """
@@ -37,7 +38,7 @@ def check_email_bing(email: str, api_key: str, timeout_seconds: float = 3.0) -> 
 def check_email_serper(email: str, api_key: str, timeout_seconds: float = 3.0) -> tuple[bool, str | None]:
     """
     Search for email in Serper.dev (Google Search API). 2500 searches/month free.
-    
+
     Returns:
         (found, error_msg) - found is True if email was found in search results
     """
@@ -73,13 +74,13 @@ def check_email_mentioned_on_web(
 ) -> tuple[bool, str | None]:
     """
     Search for email (quoted) on the web. Supports 'bing' and 'serper' as providers.
-    
+
     Args:
         email: The email address to search for
         provider: 'bing' | 'serper' | None (no search)
         api_key: Provider API key
         timeout_seconds: Request timeout
-    
+
     Returns:
         (found, error_msg)
         - (True, None) = found on the web
@@ -90,12 +91,12 @@ def check_email_mentioned_on_web(
         return False, "API key not configured"
     if not provider or not provider.strip():
         return False, "Provider not configured"
-    
+
     provider = provider.strip().lower()
-    
+
     if provider == "bing":
         return check_email_bing(email, api_key, timeout_seconds)
     if provider == "serper":
         return check_email_serper(email, api_key, timeout_seconds)
-    
+
     return False, f"Provider '{provider}' not supported"

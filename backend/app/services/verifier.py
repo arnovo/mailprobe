@@ -4,6 +4,7 @@ Email verification module.
 DEPRECATED: This module is kept for backward compatibility.
 Import from app.services.verification instead.
 """
+
 from app.services.verification import (
     DEFAULT_MAIL_FROM,
     DISPOSABLE_DOMAINS,

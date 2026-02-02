@@ -1,4 +1,5 @@
 """Jobs: list active jobs, get job status, cancel (superadmin)."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Query
@@ -56,9 +57,7 @@ async def cancel_job(
 ) -> APIResponse:
     """Cancela un job (solo superadmin). El job debe estar en queued o running."""
     workspace, _, _ = workspace_required
-    r = await db.execute(
-        select(Job).where(Job.job_id == job_id, Job.workspace_id == workspace.id)
-    )
+    r = await db.execute(select(Job).where(Job.job_id == job_id, Job.workspace_id == workspace.id))
     job = r.unique().scalars().one_or_none()
     if not job:
         return APIResponse.err("NOT_FOUND", "Job not found", {"job_id": job_id})
@@ -76,8 +75,12 @@ async def cancel_job(
 
 def _job_log_entries_filter(rows: list, current_user: User | None) -> tuple[list[str], list[dict]]:
     """Dado lista de JobLogLine (ordenada por seq), devuelve (log_lines, log_entries) filtrando por visibility: superadmin solo si user es superadmin."""
-    visible = [r for r in rows if r.visibility == "public" or (r.visibility == "superadmin" and is_superadmin(current_user))]
-    entries = [{"created_at": (r.created_at.isoformat() if r.created_at else None), "message": r.message} for r in visible]
+    visible = [
+        r for r in rows if r.visibility == "public" or (r.visibility == "superadmin" and is_superadmin(current_user))
+    ]
+    entries = [
+        {"created_at": (r.created_at.isoformat() if r.created_at else None), "message": r.message} for r in visible
+    ]
     log_lines = [e["message"] for e in entries]
     return log_lines, entries
 
@@ -90,15 +93,11 @@ async def get_job(
     current_user: User | None = Depends(get_current_user_optional),
 ) -> APIResponse:
     workspace, _, _ = workspace_required
-    r = await db.execute(
-        select(Job).where(Job.job_id == job_id, Job.workspace_id == workspace.id)
-    )
+    r = await db.execute(select(Job).where(Job.job_id == job_id, Job.workspace_id == workspace.id))
     job = r.unique().scalars().one_or_none()
     if not job:
         return APIResponse.err("NOT_FOUND", "Job not found", {"job_id": job_id})
-    r2 = await db.execute(
-        select(JobLogLine).where(JobLogLine.job_id == job.id).order_by(JobLogLine.seq)
-    )
+    r2 = await db.execute(select(JobLogLine).where(JobLogLine.job_id == job.id).order_by(JobLogLine.seq))
     rows = r2.unique().scalars().all()
     if rows:
         log_lines, log_entries = _job_log_entries_filter(rows, current_user)

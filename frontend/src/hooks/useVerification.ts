@@ -5,6 +5,14 @@ import { fetchWithAuth } from '@/lib/auth';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+// Timing constants (milliseconds)
+const POLL_INTERVAL_MS = 2000;
+const POLL_TIMEOUT_MS = 30000;
+const MESSAGE_DISPLAY_SUCCESS_MS = 4000;
+const MESSAGE_DISPLAY_ERROR_MS = 6000;
+const MESSAGE_DISPLAY_SHORT_MS = 3000;
+const MESSAGE_DISPLAY_VERIFY_ERROR_MS = 5000;
+
 interface UseVerificationOptions {
   workspaceId: string;
   onComplete?: () => void;
@@ -35,12 +43,12 @@ export function useVerification({ workspaceId, onComplete }: UseVerificationOpti
             setMessage('Listo. Email actualizado.');
             onComplete?.();
             setVerifyingId(null);
-            setTimeout(() => { setMessage(null); setLogLines([]); }, 4000);
+            setTimeout(() => { setMessage(null); setLogLines([]); }, MESSAGE_DISPLAY_SUCCESS_MS);
           } else if (status === 'failed') {
             clearInterval(interval);
             setMessage(`Error: ${d.data?.error || 'Job fallido'}`);
             setVerifyingId(null);
-            setTimeout(() => { setMessage(null); setLogLines([]); }, 6000);
+            setTimeout(() => { setMessage(null); setLogLines([]); }, MESSAGE_DISPLAY_ERROR_MS);
           }
         })
         .catch(() => {
@@ -49,15 +57,15 @@ export function useVerification({ workspaceId, onComplete }: UseVerificationOpti
           setMessage(null);
           setLogLines([]);
         });
-    }, 2000);
+    }, POLL_INTERVAL_MS);
 
-    // Timeout after 30 seconds
+    // Timeout after poll timeout
     setTimeout(() => {
       clearInterval(interval);
       setVerifyingId(null);
       setMessage(null);
       setLogLines([]);
-    }, 30000);
+    }, POLL_TIMEOUT_MS);
   }, [workspaceId, onComplete]);
 
   const verify = useCallback((leadId: number) => {
@@ -72,7 +80,7 @@ export function useVerification({ workspaceId, onComplete }: UseVerificationOpti
       .then((d) => {
         if (d.error) {
           setMessage(`Error: ${d.error.message || d.error.code || 'Error'}`);
-          setTimeout(() => setMessage(null), 5000);
+          setTimeout(() => setMessage(null), MESSAGE_DISPLAY_VERIFY_ERROR_MS);
           setVerifyingId(null);
           return;
         }
@@ -84,7 +92,7 @@ export function useVerification({ workspaceId, onComplete }: UseVerificationOpti
       })
       .catch(() => {
         setMessage('Error de red');
-        setTimeout(() => setMessage(null), 3000);
+        setTimeout(() => setMessage(null), MESSAGE_DISPLAY_SHORT_MS);
         setVerifyingId(null);
       });
   }, [workspaceId, pollJobUntilDone]);

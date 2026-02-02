@@ -1,4 +1,5 @@
 """IdempotencyKey model."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -13,7 +14,9 @@ class IdempotencyKey(Base):
     __tablename__ = "idempotency_keys"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    workspace_id: Mapped[int] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False, index=True)
+    workspace_id: Mapped[int] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     key: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     request_hash: Mapped[str] = mapped_column(String(64), nullable=False, default="")
     response_status: Mapped[int] = mapped_column(Integer, nullable=False, default=200)

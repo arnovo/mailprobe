@@ -13,6 +13,8 @@ from app.api.deps import get_db, get_workspace_required, require_scope
 from app.models import WorkspaceConfigEntry
 from app.schemas.common import APIResponse
 from app.schemas.config import (
+    MAX_CUSTOM_PATTERNS,
+    MAX_PATTERN_LENGTH,
     MAX_TIMEOUT_SECONDS,
     MIN_PATTERNS_ENABLED,
     MIN_TIMEOUT_SECONDS,
@@ -95,14 +97,14 @@ async def update_config(
     if body.allow_no_lastname is not None:
         await set_entry("allow_no_lastname", "true" if body.allow_no_lastname else None)
     if body.custom_patterns is not None:
-        # Validar patrones: deben contener @{domain} y no exceder límite
+        # Validate patterns: must contain @{domain} and not exceed limit
         valid_patterns = []
         for p in body.custom_patterns:
             p = p.strip() if isinstance(p, str) else ""
-            if p and "@{domain}" in p and len(p) <= 100:
+            if p and "@{domain}" in p and len(p) <= MAX_PATTERN_LENGTH:
                 valid_patterns.append(p)
         if valid_patterns:
-            await set_entry("custom_patterns", valid_patterns[:20])
+            await set_entry("custom_patterns", valid_patterns[:MAX_CUSTOM_PATTERNS])
         else:
             await set_entry("custom_patterns", None)  # Borrar si lista vacía
 

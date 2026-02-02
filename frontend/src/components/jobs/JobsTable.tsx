@@ -3,6 +3,8 @@
 import { Job } from '@/hooks/useJobs';
 import { JobStatusBadge } from '@/components/ui';
 
+const JOB_ID_DISPLAY_LENGTH = 8;
+
 interface JobsTableProps {
   jobs: Job[];
   cancellingId: string | null;
@@ -29,7 +31,7 @@ export function JobsTable({ jobs, cancellingId, onViewLog, onCancel }: JobsTable
           {jobs.map((job) => (
             <tr key={job.job_id} style={{ borderBottom: '1px solid #334155' }}>
               <td style={{ padding: '0.5rem', fontFamily: 'monospace', fontSize: '0.85rem' }}>
-                {job.job_id.slice(0, 8)}…
+                {job.job_id.slice(0, JOB_ID_DISPLAY_LENGTH)}…
               </td>
               <td style={{ padding: '0.5rem' }}>{job.kind}</td>
               <td style={{ padding: '0.5rem' }}>

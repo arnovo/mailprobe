@@ -4,6 +4,8 @@ import { CancelButton, LogContent, Modal, NavButtons } from '@/components/ui';
 import { Job, useJobLog } from '@/hooks';
 import { useCallback } from 'react';
 
+const JOB_ID_DISPLAY_LENGTH = 8;
+
 interface JobLogModalProps {
   job: Job | null;
   allJobs: Job[];
@@ -32,7 +34,7 @@ export function JobLogModal({ job, allJobs, workspaceId, cancellingId, onClose, 
 
   const showCancel = !!(job && (status === 'queued' || status === 'running'));
   const title = job
-    ? `Log — ${job.kind} (${job.job_id.slice(0, 8)}…)${relatedJobs.length > 1 ? ` ${currentIndex + 1}/${relatedJobs.length}` : ''}`
+    ? `Log — ${job.kind} (${job.job_id.slice(0, JOB_ID_DISPLAY_LENGTH)}…)${relatedJobs.length > 1 ? ` ${currentIndex + 1}/${relatedJobs.length}` : ''}`
     : 'Log';
 
   return (

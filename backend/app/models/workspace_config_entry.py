@@ -1,4 +1,5 @@
 """Per-workspace configuration: key-value (id, workspace_id, key, value). No migrations needed for new keys."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

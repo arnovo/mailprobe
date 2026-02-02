@@ -1,4 +1,5 @@
 """Opt-out: mark lead/email/domain as opt-out."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime

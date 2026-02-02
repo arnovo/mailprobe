@@ -1,4 +1,5 @@
 """API Keys: create, list, revoke."""
+
 from __future__ import annotations
 
 from datetime import UTC
@@ -24,6 +25,7 @@ async def create_api_key(
 ) -> APIResponse:
     workspace, _, _ = workspace_required
     from app.services.usage_plan import get_plan_limits
+
     _, max_keys = get_plan_limits(workspace.plan)
     r = await db.execute(select(ApiKey).where(ApiKey.workspace_id == workspace.id, ApiKey.revoked_at.is_(None)))
     count = len(r.unique().scalars().all())
@@ -35,6 +37,7 @@ async def create_api_key(
     key_hash = hash_api_key(full)
     scopes_str = ",".join(body.scopes)
     from app.core.config import settings
+
     rate = getattr(settings, "rate_limit_per_key", 60)
     key = ApiKey(
         workspace_id=workspace.id,
@@ -47,15 +50,17 @@ async def create_api_key(
     db.add(key)
     await db.commit()
     await db.refresh(key)
-    return APIResponse.ok({
-        "id": key.id,
-        "name": key.name,
-        "key_prefix": key.key_prefix,
-        "key": full,
-        "scopes": body.scopes,
-        "rate_limit_per_minute": key.rate_limit_per_minute,
-        "created_at": key.created_at.isoformat() if key.created_at else "",
-    })
+    return APIResponse.ok(
+        {
+            "id": key.id,
+            "name": key.name,
+            "key_prefix": key.key_prefix,
+            "key": full,
+            "scopes": body.scopes,
+            "rate_limit_per_minute": key.rate_limit_per_minute,
+            "created_at": key.created_at.isoformat() if key.created_at else "",
+        }
+    )
 
 
 @router.get("", response_model=APIResponse, dependencies=[require_scope("leads:read")])
@@ -90,6 +95,7 @@ async def revoke_api_key(
 ) -> APIResponse:
     workspace, _, _ = workspace_required
     from datetime import datetime
+
     r = await db.execute(select(ApiKey).where(ApiKey.id == key_id, ApiKey.workspace_id == workspace.id))
     key = r.unique().scalars().one_or_none()
     if not key:

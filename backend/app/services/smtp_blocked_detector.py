@@ -3,6 +3,7 @@
 Detects when SMTP port 25 is blocked at the infrastructure level
 by tracking timeout errors across multiple distinct MX hosts.
 """
+
 from __future__ import annotations
 
 import logging
@@ -45,27 +46,27 @@ def _get_redis() -> redis.Redis:
 def record_smtp_timeout(host: str) -> None:
     """
     Record an SMTP timeout for a host.
-    
+
     If enough distinct hosts have timed out within the window,
     sets the global smtp_blocked flag.
     """
     try:
         r = _get_redis()
-        
+
         # Add host to sorted set with current timestamp as score
         now = time.time()
         r.zadd(REDIS_KEY_TIMEOUT_HOSTS, {host: now})
-        
+
         # Remove old entries outside the window
         cutoff = now - WINDOW_SECONDS
         r.zremrangebyscore(REDIS_KEY_TIMEOUT_HOSTS, "-inf", cutoff)
-        
+
         # Set TTL on the set so it auto-expires if no new timeouts
         r.expire(REDIS_KEY_TIMEOUT_HOSTS, WINDOW_SECONDS + 60)
-        
+
         # Check if threshold reached
         distinct_hosts = r.zcard(REDIS_KEY_TIMEOUT_HOSTS)
-        
+
         if distinct_hosts >= THRESHOLD_HOSTS:
             # Set blocked flag with TTL
             r.setex(REDIS_KEY_BLOCKED, TTL_BLOCKED_SECONDS, "1")
@@ -81,7 +82,7 @@ def record_smtp_timeout(host: str) -> None:
 def is_smtp_blocked() -> bool:
     """
     Check if SMTP outbound is currently detected as blocked.
-    
+
     Returns:
         True if SMTP port 25 appears blocked at infrastructure level.
     """
@@ -110,7 +111,7 @@ def clear_smtp_blocked() -> None:
 def get_smtp_blocked_info() -> dict:
     """
     Get detailed info about SMTP blocked status (for debugging/admin).
-    
+
     Returns:
         Dict with blocked status, timeout hosts, and timing info.
     """
@@ -118,14 +119,11 @@ def get_smtp_blocked_info() -> dict:
         r = _get_redis()
         blocked = r.exists(REDIS_KEY_BLOCKED) == 1
         blocked_ttl = r.ttl(REDIS_KEY_BLOCKED) if blocked else 0
-        
+
         # Get hosts with timestamps
         hosts_with_scores = r.zrange(REDIS_KEY_TIMEOUT_HOSTS, 0, -1, withscores=True)
-        hosts = [
-            {"host": host, "timestamp": score}
-            for host, score in hosts_with_scores
-        ]
-        
+        hosts = [{"host": host, "timestamp": score} for host, score in hosts_with_scores]
+
         return {
             "smtp_blocked": blocked,
             "blocked_ttl_seconds": blocked_ttl if blocked_ttl > 0 else 0,

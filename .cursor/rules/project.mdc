@@ -46,6 +46,60 @@ frontend/
 - **Commits**: Conventional Commits in English (see `commit-messages.mdc` rule)
 - **No automatic commits**: Only when the user explicitly requests
 
+## No Magic Values
+
+**Never use magic strings, magic numbers, or hardcoded values directly in code.**
+
+All literal values must be extracted to named constants:
+
+```python
+# ❌ Bad - magic values
+if status == "pending":
+    timeout = 30
+    
+# ✅ Good - named constants
+STATUS_PENDING = "pending"
+DEFAULT_TIMEOUT_SECONDS = 30
+
+if status == STATUS_PENDING:
+    timeout = DEFAULT_TIMEOUT_SECONDS
+```
+
+### Where to Place Constants
+
+| Scope | Location |
+|-------|----------|
+| **Shared across modules** | Global constants file (`backend/app/core/constants.py`, `frontend/src/lib/constants.ts`) |
+| **Used only in one module** | Constants at the top of that specific file |
+| **Domain-specific** | Dedicated file in context folder (e.g., `verification/constants.py`) |
+
+### Examples
+
+```python
+# backend/app/core/constants.py (global)
+HTTP_STATUS_OK = 200
+DEFAULT_PAGE_SIZE = 50
+CACHE_TTL_SECONDS = 3600
+
+# backend/app/services/verification/constants.py (domain)
+SMTP_TIMEOUT_SECONDS = 10
+MAX_RETRY_ATTEMPTS = 3
+VERIFICATION_STATUS_VALID = "valid"
+VERIFICATION_STATUS_INVALID = "invalid"
+
+# In a specific file (local, top of file)
+MAX_BATCH_SIZE = 100  # Only used in this module
+```
+
+### What Counts as Magic Values
+
+- Status strings: `"pending"`, `"completed"`, `"failed"`
+- Numeric limits: `100`, `30`, `3600`
+- Configuration keys: `"smtp_timeout"`, `"api_key"`
+- Error messages (use error codes instead)
+- API endpoints, URLs
+- Regex patterns
+
 ## Database
 
 - Migrations with **Alembic** (numeric prefix: `001_`, `002_`, etc.)

@@ -1,4 +1,5 @@
 """Tests for SMTP blocked detector and new verification signals."""
+
 from __future__ import annotations
 
 from app.services.verification.dns_checker import detect_provider
@@ -129,7 +130,19 @@ class TestVerifyEmailWithSmtpBlocked:
 
         # Provider detection depends on MX hostname
         assert hasattr(result, "provider")
-        assert result.provider in ("google", "microsoft", "other", "ionos", "barracuda", "proofpoint", "mimecast", "ovh", "zoho", "yahoo", "icloud")
+        assert result.provider in (
+            "google",
+            "microsoft",
+            "other",
+            "ionos",
+            "barracuda",
+            "proofpoint",
+            "mimecast",
+            "ovh",
+            "zoho",
+            "yahoo",
+            "icloud",
+        )
 
     def test_verify_email_includes_spf_dmarc(self, mock_dns_valid, mock_smtp_valid):
         """verify_email should include SPF/DMARC signals."""

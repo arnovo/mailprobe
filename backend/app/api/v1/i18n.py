@@ -23,10 +23,12 @@ async def list_locales() -> APIResponse:
     Returns:
         List of locale codes with default indicated.
     """
-    return APIResponse.ok({
-        "locales": SUPPORTED_LOCALES,
-        "default": DEFAULT_LOCALE,
-    })
+    return APIResponse.ok(
+        {
+            "locales": SUPPORTED_LOCALES,
+            "default": DEFAULT_LOCALE,
+        }
+    )
 
 
 @router.get("/error-codes")
@@ -49,10 +51,12 @@ async def list_error_codes(
         locale = DEFAULT_LOCALE
 
     codes = get_all_error_codes(locale)
-    return APIResponse.ok({
-        "locale": locale,
-        "codes": codes,
-    })
+    return APIResponse.ok(
+        {
+            "locale": locale,
+            "codes": codes,
+        }
+    )
 
 
 @router.get("/error-codes/{code}")
@@ -83,8 +87,10 @@ async def get_error_code(
         )
 
     message = get_error_message(error_code, locale)
-    return APIResponse.ok({
-        "code": error_code.value,
-        "message": message,
-        "locale": locale,
-    })
+    return APIResponse.ok(
+        {
+            "code": error_code.value,
+            "message": message,
+            "locale": locale,
+        }
+    )

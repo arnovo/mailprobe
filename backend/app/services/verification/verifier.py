@@ -21,6 +21,8 @@ from app.services.verification.smtp_checker import (
 )
 from app.services.verification.web_search import check_email_mentioned_on_web
 
+CANDIDATES_PREVIEW_LIMIT = 10
+
 
 def verify_email(
     email: str,
@@ -31,7 +33,7 @@ def verify_email(
 ) -> VerifyResult:
     """
     Best-effort email verification: format, disposable domain, MX, SPF/DMARC, catch-all, SMTP RCPT.
-    
+
     When SMTP port 25 is blocked at infrastructure level, uses alternative signals
     (DNS, provider detection, SPF/DMARC) to provide useful results instead of "unknown".
     """
@@ -45,8 +47,12 @@ def verify_email(
         local, domain = email.split("@", 1)
     except ValueError:
         return VerifyResult(
-            email=email, status="invalid", reason="Malformed email",
-            confidence_score=0, mx_found=False, smtp_blocked=smtp_blocked,
+            email=email,
+            status="invalid",
+            reason="Malformed email",
+            confidence_score=0,
+            mx_found=False,
+            smtp_blocked=smtp_blocked,
         )
 
     local = (local or "").strip()
@@ -55,8 +61,12 @@ def verify_email(
     # Basic format validation
     if not local or not domain or "." not in domain or " " in email:
         return VerifyResult(
-            email=email, status="invalid", reason="Invalid email format",
-            confidence_score=0, mx_found=False, smtp_blocked=smtp_blocked,
+            email=email,
+            status="invalid",
+            reason="Invalid email format",
+            confidence_score=0,
+            mx_found=False,
+            smtp_blocked=smtp_blocked,
         )
 
     # Check disposable domain
@@ -64,8 +74,12 @@ def verify_email(
         if detail_callback:
             detail_callback(f"[Validation] Disposable/temporary domain: {domain}")
         return VerifyResult(
-            email=email, status="invalid", reason="Disposable or temporary domain",
-            confidence_score=0, mx_found=False, smtp_blocked=smtp_blocked,
+            email=email,
+            status="invalid",
+            reason="Disposable or temporary domain",
+            confidence_score=0,
+            mx_found=False,
+            smtp_blocked=smtp_blocked,
         )
 
     # MX lookup
@@ -75,8 +89,12 @@ def verify_email(
         if detail_callback:
             detail_callback(f"[MX] Lookup of {domain} failed: {type(e).__name__}: {e}")
         return VerifyResult(
-            email=email, status="invalid", reason="No MX records (or DNS failed)",
-            confidence_score=5, mx_found=False, smtp_blocked=smtp_blocked,
+            email=email,
+            status="invalid",
+            reason="No MX records (or DNS failed)",
+            confidence_score=5,
+            mx_found=False,
+            smtp_blocked=smtp_blocked,
         )
 
     mx_hosts = [h for _, h in mx]
@@ -205,7 +223,7 @@ def _calculate_score_and_status(
 ) -> tuple[int, str, str]:
     """
     Calculate confidence score and status based on available signals.
-    
+
     Scoring without SMTP:
     - mx_found: +20
     - spf_present: +10
@@ -214,7 +232,7 @@ def _calculate_score_and_status(
     - SMTP accepted (if available): +25
     - catch_all detected: -10
     - SMTP rejected 5xx: -30 (invalid)
-    
+
     Status rules:
     - invalid: bad format, disposable, no MX, SMTP 5xx clear
     - valid: SMTP accepted + no catch-all (only if SMTP available)
@@ -247,7 +265,7 @@ def _calculate_score_and_status(
     if smtp_blocked:
         # SMTP blocked: use alternative signals, don't penalize
         reason_parts.append("SMTP blocked")
-        
+
         # With good signals but no SMTP, status is "risky" (not "unknown")
         if mx_found and (spf_present or dmarc_present or provider != "other"):
             status = "risky"
@@ -358,8 +376,8 @@ def verify_and_pick_best(
 
     if detail_callback:
         detail_callback(f"[Config] MAIL FROM=<{mail_from}>, timeout SMTP={smtp_to}s, DNS={dns_to}s")
-        candidates_preview = ", ".join(candidates[:10])
-        suffix = "..." if len(candidates) > 10 else ""
+        candidates_preview = ", ".join(candidates[:CANDIDATES_PREVIEW_LIMIT])
+        suffix = "..." if len(candidates) > CANDIDATES_PREVIEW_LIMIT else ""
         detail_callback(
             f"[Config] Domain={domain}, candidates generated={len(candidates)}: {candidates_preview}{suffix}"
         )

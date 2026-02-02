@@ -1,4 +1,5 @@
 """Job log lines (stored in table for querying and auditing)."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime

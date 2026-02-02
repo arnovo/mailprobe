@@ -4,6 +4,7 @@
  */
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const HTTP_UNAUTHORIZED = 401;
 
 export function getAccessToken(): string | null {
   if (typeof window === 'undefined') return null;
@@ -75,14 +76,14 @@ export async function fetchWithAuth(
   headers.set('Authorization', `Bearer ${token}`);
 
   let res = await fetch(url, { ...options, headers });
-  if (res.status !== 401) return res;
+  if (res.status !== HTTP_UNAUTHORIZED) return res;
 
   const newToken = await refreshAccessToken();
   if (!newToken) return Promise.reject(new Error('Not authenticated'));
 
   headers.set('Authorization', `Bearer ${newToken}`);
   res = await fetch(url, { ...options, headers });
-  if (res.status === 401) {
+  if (res.status === HTTP_UNAUTHORIZED) {
     clearAuthAndRedirect();
     return Promise.reject(new Error('Not authenticated'));
   }

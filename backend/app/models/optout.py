@@ -1,4 +1,5 @@
 """OptOut model."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -13,7 +14,9 @@ class OptOut(Base):
     __tablename__ = "optouts"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    workspace_id: Mapped[int] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False, index=True)
+    workspace_id: Mapped[int] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     lead_id: Mapped[int | None] = mapped_column(ForeignKey("leads.id", ondelete="CASCADE"), nullable=True)
     email: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     domain: Mapped[str] = mapped_column(String(255), nullable=False, default="", index=True)

@@ -4,7 +4,7 @@ import { fetchWithAuth } from '@/lib/auth';
 import { useCallback, useEffect, useState } from 'react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
+const SUCCESS_MESSAGE_DISPLAY_MS = 4000;
 export interface ConfigData {
   smtpTimeout: number;
   dnsTimeout: number;
@@ -115,7 +115,7 @@ export function useConfig({ token, workspaceId }: UseConfigOptions) {
         setError(d.error.message || 'Error al guardar');
       } else {
         setSuccess('Configuración guardada.');
-        setTimeout(() => setSuccess(null), 4000);
+        setTimeout(() => setSuccess(null), SUCCESS_MESSAGE_DISPLAY_MS);
       }
     } catch {
       setError('Error de red');

@@ -81,7 +81,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     <Link
       href={href}
       className={pathname === href ? 'nav-active' : ''}
-      style={{ padding: '0.5rem', fontWeight: pathname === href ? 600 : undefined }}
+      style={{ padding: '0.5rem', fontWeight: pathname === href ? 'bold' : undefined }}
     >
       {label}
     </Link>

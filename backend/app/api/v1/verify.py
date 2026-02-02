@@ -1,4 +1,5 @@
 """Verify: stateless verify (name + domain -> candidates + best)."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Header
@@ -25,10 +26,9 @@ async def verify_stateless(
     quota_err = await check_verification_quota(db, workspace)
     if quota_err:
         return APIResponse.err("QUOTA_EXCEEDED", quota_err, {"code": "quota_exceeded"})
-    candidates, best_email, best_result, _ = verify_and_pick_best(
-        body.first_name, body.last_name, body.domain
-    )
+    candidates, best_email, best_result, _ = verify_and_pick_best(body.first_name, body.last_name, body.domain)
     from app.services.usage_plan import increment_verification_usage
+
     await increment_verification_usage(db, workspace.id)
     best_candidate = None
     if best_result:
@@ -51,9 +51,10 @@ async def verify_stateless(
             signals=getattr(best_result, "signals", []),
             reason=best_result.reason,
         )
-    return APIResponse.ok(VerifyStatelessResponse(
-        candidates=candidates,
-        best=best_email or None,
-        best_result=best_candidate,
-    ).model_dump())
-
+    return APIResponse.ok(
+        VerifyStatelessResponse(
+            candidates=candidates,
+            best=best_email or None,
+            best_result=best_candidate,
+        ).model_dump()
+    )

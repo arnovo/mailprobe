@@ -1,4 +1,5 @@
 """Email verification module."""
+
 from app.services.verification.dns_checker import (
     DNS_TIMEOUT_SECS,
     check_domain_spf_dmarc,

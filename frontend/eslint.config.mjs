@@ -101,6 +101,13 @@ const projectConfig = defineConfig([{
     // File size limits
     'max-lines': ['warn', { max: 300, skipBlankLines: true, skipComments: true }],
     'max-lines-per-function': ['warn', { max: 150, skipBlankLines: true, skipComments: true }],
+    // No magic numbers - extract to named constants
+    'no-magic-numbers': ['warn', {
+      ignore: [-1, 0, 1, 2], // Common index/boolean-like values
+      ignoreArrayIndexes: true,
+      ignoreDefaultValues: true,
+      enforceConst: true,
+    }],
   },
 }])
 

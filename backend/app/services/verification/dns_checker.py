@@ -1,4 +1,5 @@
 """DNS operations: MX lookup, SPF/DMARC check, hostname resolution, provider detection."""
+
 from __future__ import annotations
 
 import socket
@@ -27,7 +28,7 @@ PROVIDER_PATTERNS: dict[str, list[str]] = {
 def mx_lookup(domain: str, dns_timeout_seconds: float | None = None) -> list[tuple[int, str]]:
     """
     Returns list of (preference, exchange) sorted by preference.
-    
+
     Raises:
         dns.resolver.NXDOMAIN: Domain does not exist
         dns.resolver.NoAnswer: No MX records
@@ -129,16 +130,16 @@ def check_domain_spf_dmarc(domain: str, dns_timeout_seconds: float | None = None
 def detect_provider(mx_hosts: list[tuple[int, str]]) -> str:
     """
     Detect email provider based on MX hostnames.
-    
+
     Args:
         mx_hosts: List of (preference, exchange) tuples from mx_lookup().
-    
+
     Returns:
         Provider name ("google", "microsoft", etc.) or "other" if not recognized.
     """
     if not mx_hosts:
         return "other"
-    
+
     # Check all MX hosts, prioritizing by preference (already sorted)
     for _, host in mx_hosts:
         host_lower = host.lower()
@@ -146,5 +147,5 @@ def detect_provider(mx_hosts: list[tuple[int, str]]) -> str:
             for pattern in patterns:
                 if pattern in host_lower:
                     return provider
-    
+
     return "other"

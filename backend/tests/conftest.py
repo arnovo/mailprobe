@@ -3,6 +3,7 @@
 Uses PostgreSQL (via testcontainers) if Docker is available, otherwise falls back to SQLite.
 Set TEST_USE_POSTGRES=1 to force PostgreSQL (will fail if Docker is not running).
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -37,6 +38,7 @@ def _docker_available() -> bool:
     _setup_docker_host()
     try:
         import docker
+
         client = docker.from_env()
         client.ping()
         return True
@@ -62,9 +64,10 @@ def postgres_container():
     if not USE_POSTGRES:
         yield None
         return
-    
+
     _setup_docker_host()  # Ensure Docker socket is configured
     from testcontainers.postgres import PostgresContainer
+
     with PostgresContainer("postgres:16-alpine") as postgres:
         yield postgres
 
@@ -75,9 +78,7 @@ async def db_engine(postgres_container):
     if postgres_container is not None:
         # PostgreSQL via testcontainers
         sync_url = postgres_container.get_connection_url()
-        async_url = sync_url.replace("postgresql://", "postgresql+asyncpg://").replace(
-            "psycopg2", "asyncpg"
-        )
+        async_url = sync_url.replace("postgresql://", "postgresql+asyncpg://").replace("psycopg2", "asyncpg")
         engine = create_async_engine(async_url, echo=False)
     else:
         # SQLite fallback
@@ -87,15 +88,15 @@ async def db_engine(postgres_container):
             poolclass=StaticPool,
             connect_args={"check_same_thread": False},
         )
-    
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    
+
     yield engine
-    
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
-    
+
     await engine.dispose()
 
 
@@ -109,7 +110,7 @@ async def db_session(db_engine) -> AsyncGenerator[AsyncSession, None]:
         autocommit=False,
         autoflush=False,
     )
-    
+
     async with async_session() as session:
         yield session
 
@@ -117,16 +118,16 @@ async def db_session(db_engine) -> AsyncGenerator[AsyncSession, None]:
 @pytest.fixture(scope="function")
 async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     """Create test client with overridden database dependency."""
-    
+
     async def override_get_db() -> AsyncGenerator[AsyncSession, None]:
         yield db_session
-    
+
     app.dependency_overrides[get_db] = override_get_db
-    
+
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
-    
+
     app.dependency_overrides.clear()
 
 

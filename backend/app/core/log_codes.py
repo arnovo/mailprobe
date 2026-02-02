@@ -3,6 +3,7 @@
 Log messages are stored as JSON with code + params, translated in frontend.
 Format: {"code": "LOG_CODE", "params": {"key": "value"}}
 """
+
 from __future__ import annotations
 
 import json

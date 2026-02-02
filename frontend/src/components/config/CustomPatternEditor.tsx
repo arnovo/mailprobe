@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 const MAX_CUSTOM_PATTERNS = 20;
+const MAX_PATTERN_LENGTH = 100;
 
 interface CustomPatternEditorProps {
   patterns: string[];
@@ -16,7 +17,7 @@ export function CustomPatternEditor({ patterns, onChange }: CustomPatternEditorP
   const validatePattern = (pattern: string): string | null => {
     if (!pattern.trim()) return 'El patrón no puede estar vacío';
     if (!pattern.includes('@{domain}')) return 'El patrón debe contener @{domain}';
-    if (pattern.length > 100) return 'El patrón es demasiado largo (máx. 100 caracteres)';
+    if (pattern.length > MAX_PATTERN_LENGTH) return 'El patrón es demasiado largo (máx. 100 caracteres)';
     if (patterns.includes(pattern.trim())) return 'Este patrón ya existe';
     return null;
   };

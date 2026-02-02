@@ -1,4 +1,5 @@
 """Normalization and helpers (from MVP utils)."""
+
 from __future__ import annotations
 
 import re
@@ -30,4 +31,5 @@ def slugify_name(s: str | None) -> str:
 
 def safe_json_dumps(obj: object) -> str:
     import json
+
     return json.dumps(obj, ensure_ascii=False, separators=(",", ":"))

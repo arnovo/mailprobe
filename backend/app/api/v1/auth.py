@@ -1,4 +1,5 @@
 """Auth: register, login, refresh, me."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends
@@ -38,13 +39,15 @@ async def register(
     await db.refresh(user)
     access = create_access_token(user.id)
     refresh = create_refresh_token(user.id)
-    return APIResponse.ok({
-        "user": UserResponse.model_validate(user).model_dump(),
-        "access_token": access,
-        "refresh_token": refresh,
-        "token_type": "bearer",
-        "expires_in": settings.access_token_expire_minutes * 60,
-    })
+    return APIResponse.ok(
+        {
+            "user": UserResponse.model_validate(user).model_dump(),
+            "access_token": access,
+            "refresh_token": refresh,
+            "token_type": "bearer",
+            "expires_in": settings.access_token_expire_minutes * 60,
+        }
+    )
 
 
 @router.post("/login", response_model=APIResponse)
@@ -55,19 +58,22 @@ async def login(
     result = await db.execute(select(User).where(User.email == body.email))
     user = result.unique().scalars().one_or_none()
     from app.core.security import verify_password
+
     if not user or not verify_password(body.password, user.hashed_password):
         return APIResponse.err("INVALID_CREDENTIALS", "Invalid email or password")
     if not user.is_active:
         return APIResponse.err("USER_DISABLED", "Account is disabled")
     access = create_access_token(user.id)
     refresh = create_refresh_token(user.id)
-    return APIResponse.ok({
-        "user": UserResponse.model_validate(user).model_dump(),
-        "access_token": access,
-        "refresh_token": refresh,
-        "token_type": "bearer",
-        "expires_in": settings.access_token_expire_minutes * 60,
-    })
+    return APIResponse.ok(
+        {
+            "user": UserResponse.model_validate(user).model_dump(),
+            "access_token": access,
+            "refresh_token": refresh,
+            "token_type": "bearer",
+            "expires_in": settings.access_token_expire_minutes * 60,
+        }
+    )
 
 
 @router.post("/refresh", response_model=APIResponse)
@@ -87,12 +93,14 @@ async def refresh(
         return APIResponse.err("USER_NOT_FOUND", "User not found")
     access = create_access_token(user.id)
     new_refresh = create_refresh_token(user.id)
-    return APIResponse.ok({
-        "access_token": access,
-        "refresh_token": new_refresh,
-        "token_type": "bearer",
-        "expires_in": settings.access_token_expire_minutes * 60,
-    })
+    return APIResponse.ok(
+        {
+            "access_token": access,
+            "refresh_token": new_refresh,
+            "token_type": "bearer",
+            "expires_in": settings.access_token_expire_minutes * 60,
+        }
+    )
 
 
 @router.get("/me", response_model=APIResponse)

@@ -25,6 +25,7 @@ SessionLocal = sessionmaker(engine, autocommit=False, autoflush=False)
 # Verification can take a while (DNS, multiple MX, SMTP per candidate). Task limit: 10 min soft, 11 min hard.
 VERIFY_SOFT_TIME_LIMIT = 600
 VERIFY_TIME_LIMIT = 660
+MAX_LOGGED_CANDIDATES = 15
 
 
 def get_sync_session() -> Session:
@@ -158,19 +159,29 @@ def run_verify_lead(self, lead_id: int, workspace_id: int, job_id: str):
             if msg:
                 # Raw text messages from verifier (not translated)
                 from app.models import JobLogLine
+
                 raw_msg = msg
                 job.log_lines = (job.log_lines or []) + [raw_msg]
                 seq = len(job.log_lines) - 1
                 db.add(JobLogLine(job_id=job.id, seq=seq, message=raw_msg, level="info", visibility="public"))
             if candidate_email:
-                _append_log(db, job, LogCode.DEBUG_CANDIDATE_STATUS, {"email": candidate_email}, visibility="superadmin")
+                _append_log(
+                    db, job, LogCode.DEBUG_CANDIDATE_STATUS, {"email": candidate_email}, visibility="superadmin"
+                )
             if smtp_response:
-                _append_log(db, job, LogCode.DEBUG_CANDIDATE_STATUS, {"email": "", "response": smtp_response}, visibility="superadmin")
+                _append_log(
+                    db,
+                    job,
+                    LogCode.DEBUG_CANDIDATE_STATUS,
+                    {"email": "", "response": smtp_response},
+                    visibility="superadmin",
+                )
             db.commit()
 
         def _detail_cb(detail_msg: str) -> None:
             # Raw detail messages (superadmin only, not translated)
             from app.models import JobLogLine
+
             job.log_lines = (job.log_lines or []) + [detail_msg]
             seq = len(job.log_lines) - 1
             db.add(JobLogLine(job_id=job.id, seq=seq, message=detail_msg, level="debug", visibility="superadmin"))
@@ -236,7 +247,9 @@ def run_verify_lead(self, lead_id: int, workspace_id: int, job_id: str):
 
             mx_hosts = [h for _, h in mx_lookup(domain, dns_timeout_seconds=cfg.get("dns_timeout_seconds"))]
         except Exception as ex:
-            _append_log(db, job, LogCode.DEBUG_MX_EXCEPTION, {"error": f"{type(ex).__name__}: {ex}"}, visibility="superadmin")
+            _append_log(
+                db, job, LogCode.DEBUG_MX_EXCEPTION, {"error": f"{type(ex).__name__}: {ex}"}, visibility="superadmin"
+            )
         else:
             _append_log(db, job, LogCode.DEBUG_MX_LOOKUP, {"host_count": len(mx_hosts)}, visibility="superadmin")
         db.commit()
@@ -248,12 +261,24 @@ def run_verify_lead(self, lead_id: int, workspace_id: int, job_id: str):
             _append_log(db, job, LogCode.VERIFY_MX_NOT_FOUND, visibility="public")
         db.commit()
         for i, (email, info) in enumerate(probe_results.items()):
-            if i >= 15:
-                _append_log(db, job, LogCode.DEBUG_MORE_CANDIDATES, {"count": len(probe_results) - 15}, visibility="superadmin")
+            if i >= MAX_LOGGED_CANDIDATES:
+                _append_log(
+                    db,
+                    job,
+                    LogCode.DEBUG_MORE_CANDIDATES,
+                    {"count": len(probe_results) - MAX_LOGGED_CANDIDATES},
+                    visibility="superadmin",
+                )
                 break
             status = info.get("status", "?")
             detail = (info.get("detail") or "")[:100]
-            _append_log(db, job, LogCode.DEBUG_CANDIDATE_STATUS, {"email": email, "status": status, "detail": detail}, visibility="superadmin")
+            _append_log(
+                db,
+                job,
+                LogCode.DEBUG_CANDIDATE_STATUS,
+                {"email": email, "status": status, "detail": detail},
+                visibility="superadmin",
+            )
         db.commit()
 
         log = VerificationLog(

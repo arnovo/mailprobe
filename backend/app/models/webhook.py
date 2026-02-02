@@ -1,4 +1,5 @@
 """Webhook and WebhookDelivery models."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -17,13 +18,19 @@ class Webhook(Base):
     __tablename__ = "webhooks"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    workspace_id: Mapped[int] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False, index=True)
+    workspace_id: Mapped[int] = mapped_column(
+        ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     url: Mapped[str] = mapped_column(String(2048), nullable=False)
     secret: Mapped[str] = mapped_column(String(255), nullable=False)
-    events: Mapped[str] = mapped_column(String(1024), nullable=False)  # comma-separated: lead.created,verification.completed,...
+    events: Mapped[str] = mapped_column(
+        String(1024), nullable=False
+    )  # comma-separated: lead.created,verification.completed,...
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC))
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC)
+    )
 
     workspace: Mapped[Workspace] = relationship("Workspace", back_populates="webhooks")
     deliveries: Mapped[list[WebhookDelivery]] = relationship("WebhookDelivery", back_populates="webhook")

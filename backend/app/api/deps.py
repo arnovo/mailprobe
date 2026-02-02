@@ -1,4 +1,5 @@
 """API dependencies: auth, workspace, RBAC, rate limit, idempotency."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -128,9 +129,11 @@ def ensure_scope(api_key: ApiKey | None, scope: str, request: Request) -> None:
 
 def require_scope(scope: str):
     """Returns a Depends for scope check. Use dependencies=[require_scope('x')] - but ensure_scope in body is used instead to avoid AsyncSession in dep graph."""
+
     async def check(request: Request, workspace_required: tuple = Depends(get_workspace_required)) -> None:
         _, __, api_key = workspace_required
         ensure_scope(api_key, scope, request)
+
     return Depends(check)
 
 
@@ -151,10 +154,12 @@ async def get_current_user(
 
 def require_superadmin():
     """Devuelve la dependencia (callable) para inyectar en Depends(require_superadmin())."""
+
     async def check(current_user: User = Depends(get_current_user)) -> User:
         if not is_superadmin(current_user):
             raise HTTPException(status_code=403, detail="Superadmin required")
         return current_user
+
     return check
 
 
@@ -230,6 +235,7 @@ def require_role(min_role: str):
 
 # --- Idempotency ---
 
+
 async def check_idempotency(
     workspace_id: int,
     key: str,
@@ -259,6 +265,7 @@ async def save_idempotency(
     response_body: str,
 ) -> None:
     from app.models.idempotency import IdempotencyKey
+
     rec = IdempotencyKey(
         workspace_id=workspace_id,
         key=key,
