@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
+from app.core.log_service import VerificationLogger
 from app.services.smtp_blocked_detector import is_smtp_blocked
 from app.services.verification.dns_checker import (
     DNS_TIMEOUT_SECS,
@@ -29,7 +30,7 @@ def verify_email(
     mail_from: str | None = None,
     smtp_timeout_seconds: int | None = None,
     dns_timeout_seconds: float | None = None,
-    detail_callback: Callable[[str], None] | None = None,
+    logger: VerificationLogger | None = None,
 ) -> VerifyResult:
     """
     Best-effort email verification: format, disposable domain, MX, SPF/DMARC, catch-all, SMTP RCPT.
@@ -38,6 +39,7 @@ def verify_email(
     (DNS, provider detection, SPF/DMARC) to provide useful results instead of "unknown".
     """
     mail_from = mail_from or DEFAULT_MAIL_FROM
+    log = logger or VerificationLogger()
 
     # Check if SMTP is blocked at infrastructure level
     smtp_blocked = is_smtp_blocked()
@@ -71,8 +73,7 @@ def verify_email(
 
     # Check disposable domain
     if domain in DISPOSABLE_DOMAINS:
-        if detail_callback:
-            detail_callback(f"[Validation] Disposable/temporary domain: {domain}")
+        log.debug_disposable_domain(domain)
         return VerifyResult(
             email=email,
             status="invalid",
@@ -86,8 +87,7 @@ def verify_email(
     try:
         mx = mx_lookup(domain, dns_timeout_seconds=dns_timeout_seconds)
     except Exception as e:
-        if detail_callback:
-            detail_callback(f"[MX] Lookup of {domain} failed: {type(e).__name__}: {e}")
+        log.debug_mx_lookup_failed(domain, type(e).__name__, str(e))
         return VerifyResult(
             email=email,
             status="invalid",
@@ -100,19 +100,17 @@ def verify_email(
     mx_hosts = [h for _, h in mx]
     mx_found = True
 
-    if detail_callback:
-        mx_list = ", ".join(f"{pref}={host}" for pref, host in mx)
-        detail_callback(f"[MX] Domain {domain}: {len(mx)} MX record(s) -> {mx_list}")
+    mx_list = ", ".join(f"{pref}={host}" for pref, host in mx)
+    log.debug_mx_lookup(domain, len(mx), mx_list)
 
     # Detect provider from MX
     provider = detect_provider(mx)
-    if detail_callback and provider != "other":
-        detail_callback(f"[Provider] Detected: {provider}")
+    if provider != "other":
+        log.debug_provider_detected(provider)
 
     # Check SPF/DMARC (always, for scoring)
     spf_present, dmarc_present = check_domain_spf_dmarc(domain, dns_timeout_seconds=dns_timeout_seconds)
-    if detail_callback:
-        detail_callback(f"[DNS] SPF={spf_present}, DMARC={dmarc_present}")
+    log.debug_dns_spf_dmarc(spf_present, dmarc_present)
 
     # Initialize SMTP-related variables
     catch_all: bool | None = None
@@ -123,8 +121,7 @@ def verify_email(
 
     # Skip SMTP probes if blocked at infrastructure level
     if smtp_blocked:
-        if detail_callback:
-            detail_callback("[SMTP] Skipped: port 25 blocked at infrastructure level")
+        log.debug_smtp_skipped()
     else:
         # Detect catch-all
         catch_all_result, catch_smtp, catch_reason = detect_catch_all(
@@ -133,14 +130,13 @@ def verify_email(
             mail_from,
             smtp_timeout_seconds=smtp_timeout_seconds,
             dns_timeout_seconds=dns_timeout_seconds,
-            detail_callback=detail_callback,
+            logger=log,
         )
         catch_all = catch_all_result if catch_smtp else None
 
         # SMTP RCPT probe
         for mxh in mx_hosts[:2]:
-            if detail_callback:
-                detail_callback(f"[RCPT] Verifying mailbox {email} on MX server: {mxh}")
+            log.debug_rcpt_verifying(email, mxh)
 
             accepted, detail, short = smtp_probe_rcpt(
                 mxh,
@@ -148,7 +144,7 @@ def verify_email(
                 mail_from,
                 smtp_timeout_seconds=smtp_timeout_seconds,
                 dns_timeout_seconds=dns_timeout_seconds,
-                detail_callback=detail_callback,
+                logger=log,
             )
             smtp_attempted = True
             detail_any = f"{mxh}: {detail}"
@@ -322,8 +318,7 @@ def verify_and_pick_best(
     last_name: str,
     domain: str,
     mail_from: str | None = None,
-    progress_callback: Callable[[str | None, str | None, str | None], None] | None = None,
-    detail_callback: Callable[[str], None] | None = None,
+    logger: VerificationLogger | None = None,
     smtp_timeout_seconds: int | None = None,
     dns_timeout_seconds: float | None = None,
     enabled_pattern_indices: list[int] | None = None,
@@ -341,8 +336,7 @@ def verify_and_pick_best(
         last_name: Lead's last name
         domain: Email domain
         mail_from: MAIL FROM address for SMTP probes
-        progress_callback: Optional; (public_msg, candidate_email, smtp_response)
-        detail_callback: Optional; detailed messages for superadmin only
+        logger: VerificationLogger for i18n logs
         smtp_timeout_seconds: SMTP timeout (uses global if not set)
         dns_timeout_seconds: DNS timeout (uses global if not set)
         enabled_pattern_indices: Pattern indices to use (None = all)
@@ -356,6 +350,8 @@ def verify_and_pick_best(
         (candidates, best_email, best_result, probe_results_dict)
     """
     from app.services.email_patterns import generate_candidates
+
+    log = logger or VerificationLogger()
 
     candidates = generate_candidates(
         first_name,
@@ -374,13 +370,10 @@ def verify_and_pick_best(
     smtp_to = smtp_timeout_seconds if smtp_timeout_seconds is not None else SMTP_TIMEOUT_SECS
     dns_to = dns_timeout_seconds if dns_timeout_seconds is not None else DNS_TIMEOUT_SECS
 
-    if detail_callback:
-        detail_callback(f"[Config] MAIL FROM=<{mail_from}>, timeout SMTP={smtp_to}s, DNS={dns_to}s")
-        candidates_preview = ", ".join(candidates[:CANDIDATES_PREVIEW_LIMIT])
-        suffix = "..." if len(candidates) > CANDIDATES_PREVIEW_LIMIT else ""
-        detail_callback(
-            f"[Config] Domain={domain}, candidates generated={len(candidates)}: {candidates_preview}{suffix}"
-        )
+    log.debug_config(mail_from, smtp_to, dns_to)
+    candidates_preview = ", ".join(candidates[:CANDIDATES_PREVIEW_LIMIT])
+    suffix = "..." if len(candidates) > CANDIDATES_PREVIEW_LIMIT else ""
+    log.debug_candidates_generated(domain, len(candidates), candidates_preview + suffix)
 
     rank = {"valid": 3, "risky": 2, "unknown": 1, "invalid": 0}
     best_email = ""
@@ -389,21 +382,16 @@ def verify_and_pick_best(
     total = len(candidates)
 
     for i, cand in enumerate(candidates):
-        if detail_callback:
-            detail_callback(f"--- Candidate {i + 1}/{total}: {cand} ---")
-        if progress_callback:
-            progress_callback(f"Verifying candidate {i + 1}/{total}...", cand, None)
+        log.debug_candidate_header(i + 1, total, cand)
+        log.verify_candidate(i + 1, total, cand)
 
         res = verify_email(
             cand,
             mail_from=mail_from,
             smtp_timeout_seconds=smtp_timeout_seconds,
             dns_timeout_seconds=dns_timeout_seconds,
-            detail_callback=detail_callback,
+            logger=log,
         )
-
-        if progress_callback:
-            progress_callback(None, None, res.smtp_code_msg or "(no SMTP response)")
 
         probe_results[cand] = {
             "accepted": res.status in ("valid", "risky") and res.mx_found,
@@ -422,10 +410,7 @@ def verify_and_pick_best(
     # Optional web search: if best result is unknown (or valid), search if email appears in public sources
     if best_result and best_email:
         if web_search_provider and web_search_api_key:
-            if detail_callback:
-                detail_callback(
-                    f"[Web] Searching if email appears in public sources (provider: {web_search_provider})..."
-                )
+            log.debug_web_searching(web_search_provider)
 
             found, error_msg = check_email_mentioned_on_web(
                 best_email,
@@ -440,21 +425,16 @@ def verify_and_pick_best(
             if found:
                 best_result.web_mentioned = True
                 best_result.reason = (best_result.reason or "").rstrip() + " | Email found in public sources."
-                if detail_callback:
-                    detail_callback("[Web] Email found in public sources.")
+                log.debug_web_found()
             elif error_msg:
-                if detail_callback:
-                    detail_callback(f"[Web] Search error: {error_msg}")
+                log.debug_web_error(error_msg)
             else:
-                if detail_callback:
-                    detail_callback("[Web] Email not found in public sources.")
-        elif detail_callback:
+                log.debug_web_not_found()
+        else:
             # Warn that web search was skipped due to missing configuration
             if not web_search_provider:
-                detail_callback("[Web] Web search skipped: no provider configured (Dashboard → Configuration).")
+                log.debug_web_skipped_no_provider()
             elif not web_search_api_key:
-                detail_callback(
-                    f"[Web] Web search skipped: provider '{web_search_provider}' configured but no API key."
-                )
+                log.debug_web_skipped_no_key(web_search_provider)
 
     return candidates, best_email or (candidates[0] if candidates else ""), best_result, probe_results

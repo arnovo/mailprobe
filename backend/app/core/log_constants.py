@@ -1,0 +1,115 @@
+"""Constants for job log codes and parameters.
+
+These are used by log_service.py and translated in the frontend.
+"""
+
+from enum import Enum
+
+
+class LogCode(str, Enum):
+    """Log codes for verification jobs - translated in frontend."""
+
+    # Job lifecycle
+    JOB_STARTED = "JOB_STARTED"
+    JOB_STARTING_VERIFICATION = "JOB_STARTING_VERIFICATION"
+    JOB_COMPLETED = "JOB_COMPLETED"
+    JOB_FAILED = "JOB_FAILED"
+    JOB_TIMEOUT = "JOB_TIMEOUT"
+
+    # Verification steps (public)
+    VERIFY_DOMAIN = "VERIFY_DOMAIN"
+    VERIFY_GENERATING_CANDIDATES = "VERIFY_GENERATING_CANDIDATES"
+    VERIFY_CHECKING_MAIL_SERVER = "VERIFY_CHECKING_MAIL_SERVER"
+    VERIFY_CANDIDATE = "VERIFY_CANDIDATE"
+    VERIFY_COMPLETED = "VERIFY_COMPLETED"
+    VERIFY_NO_EMAIL_FOUND = "VERIFY_NO_EMAIL_FOUND"
+
+    # Debug: MX/DNS
+    DEBUG_WORKER_PROCESSING = "DEBUG_WORKER_PROCESSING"
+    DEBUG_LEAD_LOADED = "DEBUG_LEAD_LOADED"
+    DEBUG_CALLING_VERIFIER = "DEBUG_CALLING_VERIFIER"
+    DEBUG_VERIFIER_RESULT = "DEBUG_VERIFIER_RESULT"
+    DEBUG_CONFIG = "DEBUG_CONFIG"
+    DEBUG_CANDIDATES_GENERATED = "DEBUG_CANDIDATES_GENERATED"
+    DEBUG_CANDIDATE_HEADER = "DEBUG_CANDIDATE_HEADER"
+    DEBUG_CANDIDATE_EMAIL = "DEBUG_CANDIDATE_EMAIL"
+    DEBUG_MORE_CANDIDATES = "DEBUG_MORE_CANDIDATES"
+    DEBUG_MX_LOOKUP = "DEBUG_MX_LOOKUP"
+    DEBUG_MX_LOOKUP_FAILED = "DEBUG_MX_LOOKUP_FAILED"
+    DEBUG_PROVIDER_DETECTED = "DEBUG_PROVIDER_DETECTED"
+    DEBUG_DNS_SPF_DMARC = "DEBUG_DNS_SPF_DMARC"
+    DEBUG_DISPOSABLE_DOMAIN = "DEBUG_DISPOSABLE_DOMAIN"
+
+    # Debug: SMTP
+    DEBUG_SMTP_SKIPPED = "DEBUG_SMTP_SKIPPED"
+    DEBUG_SMTP_DNS_RESOLVE = "DEBUG_SMTP_DNS_RESOLVE"
+    DEBUG_SMTP_CONNECTING = "DEBUG_SMTP_CONNECTING"
+    DEBUG_SMTP_RCPT_RESULT = "DEBUG_SMTP_RCPT_RESULT"
+    DEBUG_SMTP_EXCEPTION = "DEBUG_SMTP_EXCEPTION"
+    DEBUG_RCPT_VERIFYING = "DEBUG_RCPT_VERIFYING"
+
+    # Debug: Catch-all
+    DEBUG_CATCHALL_CHECKING = "DEBUG_CATCHALL_CHECKING"
+    DEBUG_CATCHALL_TESTING = "DEBUG_CATCHALL_TESTING"
+    DEBUG_CATCHALL_RESULT = "DEBUG_CATCHALL_RESULT"
+    DEBUG_CATCHALL_INCONCLUSIVE = "DEBUG_CATCHALL_INCONCLUSIVE"
+
+    # Debug: Web search
+    DEBUG_WEB_SEARCHING = "DEBUG_WEB_SEARCHING"
+    DEBUG_WEB_FOUND = "DEBUG_WEB_FOUND"
+    DEBUG_WEB_NOT_FOUND = "DEBUG_WEB_NOT_FOUND"
+    DEBUG_WEB_ERROR = "DEBUG_WEB_ERROR"
+    DEBUG_WEB_SKIPPED_NO_PROVIDER = "DEBUG_WEB_SKIPPED_NO_PROVIDER"
+    DEBUG_WEB_SKIPPED_NO_KEY = "DEBUG_WEB_SKIPPED_NO_KEY"
+
+    # Errors
+    ERROR_LEAD_NOT_FOUND = "ERROR_LEAD_NOT_FOUND"
+    ERROR_LEAD_OPTED_OUT = "ERROR_LEAD_OPTED_OUT"
+    ERROR_GENERIC = "ERROR_GENERIC"
+
+
+class LogParam(str, Enum):
+    """Parameter keys for log messages - avoids magic strings."""
+
+    # Identifiers
+    JOB_ID = "job_id"
+    JOB_TYPE = "job_type"
+    LEAD_ID = "lead_id"
+    WORKSPACE_ID = "workspace_id"
+
+    # Email/Domain
+    DOMAIN = "domain"
+    EMAIL = "email"
+    FIRST_NAME = "first_name"
+    LAST_NAME = "last_name"
+
+    # Verification
+    PROVIDER = "provider"
+    COUNT = "count"
+    HOSTS = "hosts"
+    PREVIEW = "preview"
+    INDEX = "index"
+    TOTAL = "total"
+    STATUS = "status"
+    CONFIDENCE = "confidence"
+    REASON = "reason"
+
+    # SMTP
+    MX_HOST = "mx_host"
+    IP = "ip"
+    TIMEOUT = "timeout"
+    MAIL_FROM = "mail_from"
+    SMTP_TIMEOUT = "smtp_timeout"
+    DNS_TIMEOUT = "dns_timeout"
+    RESPONSE = "response"
+    TEST_EMAIL = "test_email"
+    ACCEPTED = "accepted"
+    DETAIL = "detail"
+
+    # DNS
+    SPF = "spf"
+    DMARC = "dmarc"
+
+    # Errors
+    ERROR = "error"
+    ERROR_TYPE = "error_type"

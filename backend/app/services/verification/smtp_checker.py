@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import random
 import smtplib
-from collections.abc import Callable
 
 from app.core.config import settings
+from app.core.log_service import VerificationLogger
 from app.services.smtp_blocked_detector import record_smtp_timeout
 from app.services.verification.dns_checker import resolve_to_ip
 
@@ -26,7 +26,7 @@ def smtp_probe_rcpt(
     mail_from: str,
     smtp_timeout_seconds: int | None = None,
     dns_timeout_seconds: float | None = None,
-    detail_callback: Callable[[str], None] | None = None,
+    logger: VerificationLogger | None = None,
 ) -> tuple[bool, str, str | None]:
     """
     Best-effort SMTP RCPT probe.
@@ -37,18 +37,17 @@ def smtp_probe_rcpt(
         - detail: Human-readable detail string
         - short_code_msg: e.g. "250 OK" for logging
     """
+    log = logger or VerificationLogger()
     smtp_to = smtp_timeout_seconds if smtp_timeout_seconds is not None else SMTP_TIMEOUT_SECS
     ip = resolve_to_ip(mx_host, dns_timeout_seconds=dns_timeout_seconds)
 
-    if detail_callback:
-        detail_callback(f"  [SMTP] DNS resolution of {mx_host} -> IP: {ip or 'failed (timeout/no A/AAAA)'}")
+    log.debug_smtp_dns_resolve(mx_host, ip)
 
     if not ip:
         return False, "SMTP error: DNS timeout or no A/AAAA", None
 
     try:
-        if detail_callback:
-            detail_callback(f"  [SMTP] Connecting to {mx_host} ({ip}:25), timeout={smtp_to}s")
+        log.debug_smtp_connecting(mx_host, ip, smtp_to)
 
         with smtplib.SMTP(ip, 25, timeout=smtp_to) as s:
             s.set_debuglevel(0)
@@ -57,8 +56,7 @@ def smtp_probe_rcpt(
             code, msg = s.rcpt(candidate_email)
             short = f"{code} {str(msg).strip()}" if msg else str(code)
 
-            if detail_callback:
-                detail_callback(f"  [SMTP] MAIL FROM:<{mail_from}> RCPT TO:<{candidate_email}> -> {short}")
+            log.debug_smtp_rcpt_result(mail_from, candidate_email, short)
 
             if SMTP_SUCCESS_MIN <= code < SMTP_SUCCESS_MAX:
                 return True, f"RCPT accepted ({code})", short
@@ -68,45 +66,37 @@ def smtp_probe_rcpt(
 
     except smtplib.SMTPConnectError as e:
         err = f"SMTP error: {type(e).__name__}"
-        if detail_callback:
-            detail_callback(f"  [SMTP] Exception on {mx_host}: {err}")
+        log.debug_smtp_exception(mx_host, err)
         return False, err, None
     except smtplib.SMTPServerDisconnected as e:
         err = f"SMTP error: {type(e).__name__}"
-        if detail_callback:
-            detail_callback(f"  [SMTP] Exception on {mx_host}: {err}")
+        log.debug_smtp_exception(mx_host, err)
         return False, err, None
     except smtplib.SMTPHeloError as e:
         err = f"SMTP error: {type(e).__name__}"
-        if detail_callback:
-            detail_callback(f"  [SMTP] Exception on {mx_host}: {err}")
+        log.debug_smtp_exception(mx_host, err)
         return False, err, None
     except smtplib.SMTPRecipientsRefused as e:
         err = f"SMTP error: {type(e).__name__}"
-        if detail_callback:
-            detail_callback(f"  [SMTP] Exception on {mx_host}: {err}")
+        log.debug_smtp_exception(mx_host, err)
         return False, err, None
     except smtplib.SMTPSenderRefused as e:
         err = f"SMTP error: {type(e).__name__}"
-        if detail_callback:
-            detail_callback(f"  [SMTP] Exception on {mx_host}: {err}")
+        log.debug_smtp_exception(mx_host, err)
         return False, err, None
     except smtplib.SMTPDataError as e:
         err = f"SMTP error: {type(e).__name__}"
-        if detail_callback:
-            detail_callback(f"  [SMTP] Exception on {mx_host}: {err}")
+        log.debug_smtp_exception(mx_host, err)
         return False, err, None
     except TimeoutError as e:
         err = f"SMTP error: {type(e).__name__}"
-        if detail_callback:
-            detail_callback(f"  [SMTP] Exception on {mx_host}: {err}")
+        log.debug_smtp_exception(mx_host, err)
         # Record timeout for SMTP blocked detection
         record_smtp_timeout(mx_host)
         return False, err, None
     except OSError as e:
         err = f"SMTP error: {type(e).__name__}"
-        if detail_callback:
-            detail_callback(f"  [SMTP] Exception on {mx_host}: {err}")
+        log.debug_smtp_exception(mx_host, err)
         # Record timeout for connection-related errors (port blocked, network unreachable)
         if "timed out" in str(e).lower() or "connection refused" in str(e).lower():
             record_smtp_timeout(mx_host)
@@ -119,7 +109,7 @@ def detect_catch_all(
     mail_from: str,
     smtp_timeout_seconds: int | None = None,
     dns_timeout_seconds: float | None = None,
-    detail_callback: Callable[[str], None] | None = None,
+    logger: VerificationLogger | None = None,
 ) -> tuple[bool, bool, str]:
     """
     Detect if domain is a catch-all (accepts any mailbox).
@@ -127,15 +117,14 @@ def detect_catch_all(
     Returns:
         (catch_all_detected, smtp_attempted, reason)
     """
+    log = logger or VerificationLogger()
     rnd = "".join(random.choice("abcdefghijklmnopqrstuvwxyz0123456789") for _ in range(18))
     test_email = f"{rnd}@{domain}"
 
-    if detail_callback:
-        detail_callback(f"[Catch-all] Checking if domain accepts any mailbox: test address {test_email}")
+    log.debug_catchall_checking(test_email)
 
     for mx in mx_hosts[:2]:
-        if detail_callback:
-            detail_callback(f"[Catch-all] Testing MX server: {mx}")
+        log.debug_catchall_testing(mx)
 
         accepted, detail, short = smtp_probe_rcpt(
             mx,
@@ -143,11 +132,10 @@ def detect_catch_all(
             mail_from,
             smtp_timeout_seconds=smtp_timeout_seconds,
             dns_timeout_seconds=dns_timeout_seconds,
-            detail_callback=detail_callback,
+            logger=log,
         )
 
-        if detail_callback:
-            detail_callback(f"[Catch-all] Result on {mx}: accepted={accepted}, detail={short or detail}")
+        log.debug_catchall_result(mx, accepted, short or detail)
 
         if accepted:
             return True, True, f"Random RCPT accepted on {mx}: {detail}"
@@ -155,7 +143,5 @@ def detect_catch_all(
             continue
         return False, True, f"Random RCPT rejected on {mx}: {detail}"
 
-    if detail_callback:
-        detail_callback("[Catch-all] Could not reliably test (timeouts/errors on all MX)")
-
+    log.debug_catchall_inconclusive()
     return False, False, "Could not reliably probe catch-all"

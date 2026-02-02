@@ -137,38 +137,46 @@ class TestVerifyAndPickBest:
         assert len(candidates) <= 2
 
     def test_progress_callback(self, mock_dns_valid, mock_smtp_valid):
-        """Should call progress callback during verification."""
+        """Should call progress callback during verification via logger."""
+        from app.core.log_service import VerificationLogger
+
         progress_calls = []
 
         def progress_callback(msg, candidate, response):
             progress_calls.append((msg, candidate, response))
 
+        logger = VerificationLogger(progress_callback=progress_callback)
+
         verify_and_pick_best(
             first_name="John",
             last_name="Doe",
             domain="example.com",
-            progress_callback=progress_callback,
+            logger=logger,
         )
 
         assert len(progress_calls) > 0
 
     def test_detail_callback(self, mock_dns_valid, mock_smtp_valid):
-        """Should call detail callback with technical info."""
+        """Should call detail callback with technical info via logger."""
+        from app.core.log_service import VerificationLogger
+
         detail_calls = []
 
         def detail_callback(msg):
             detail_calls.append(msg)
 
+        logger = VerificationLogger(detail_callback=detail_callback)
+
         verify_and_pick_best(
             first_name="John",
             last_name="Doe",
             domain="example.com",
-            detail_callback=detail_callback,
+            logger=logger,
         )
 
         assert len(detail_calls) > 0
-        # Should include config info
-        assert any("[Config]" in call for call in detail_calls)
+        # Should include config info (now as JSON with DEBUG_CONFIG code)
+        assert any("DEBUG_CONFIG" in call for call in detail_calls)
 
     def test_picks_best_by_confidence(self, mock_dns_valid, mock_smtp_valid):
         """Should pick candidate with highest confidence score."""
