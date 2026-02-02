@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 # Sync engine for Celery (worker runs outside async)
 from app.core.config import settings as s
+from app.core.log_codes import LogCode, make_log_message
 from app.services.verifier import verify_and_pick_best
 from app.services.workspace_config import get_workspace_config_sync
 from app.tasks.celery_app import celery_app
@@ -30,10 +31,12 @@ def get_sync_session() -> Session:
     return SessionLocal()
 
 
-def _log_level(message: str) -> str:
-    if message.strip().startswith("[DEBUG]"):
+def _log_level_from_code(code: LogCode | str) -> str:
+    """Determine log level from code."""
+    code_str = code if isinstance(code, str) else code.value
+    if code_str.startswith("DEBUG_"):
         return "debug"
-    if "Error" in message or "error" in message.lower():
+    if code_str.startswith("ERROR_") or code_str in ("JOB_FAILED", "JOB_TIMEOUT"):
         return "error"
     return "info"
 
@@ -41,32 +44,38 @@ def _log_level(message: str) -> str:
 def _append_log(
     db: Session,
     job: Job,
-    message: str,
+    code: LogCode | str,
+    params: dict | None = None,
     level: str | None = None,
     visibility: str | None = None,
 ) -> None:
-    """Append a line to the job (JSON log_lines) and to job_log_lines table.
-    visibility: "public" (everyone) or "superadmin" (superadmin only; detailed/sensitive logs).
-    Requires migrations 004 and 005 applied (job_log_lines table and visibility column).
+    """Append a log line with i18n code to job_log_lines table.
+
+    Args:
+        code: LogCode enum or string code for i18n translation
+        params: Optional parameters for message interpolation
+        visibility: "public" (everyone) or "superadmin" (superadmin only)
     """
     from app.models import JobLogLine
 
+    message = make_log_message(code, params)
     job.log_lines = (job.log_lines or []) + [message]
     seq = len(job.log_lines) - 1
-    lvl = level or _log_level(message)
+    lvl = level or _log_level_from_code(code)
+    code_str = code if isinstance(code, str) else code.value
     if visibility is None:
-        visibility = "superadmin" if message.strip().startswith("[DEBUG]") else "public"
+        visibility = "superadmin" if code_str.startswith("DEBUG_") else "public"
     db.add(JobLogLine(job_id=job.id, seq=seq, message=message, level=lvl, visibility=visibility))
 
 
-def _mark_job_failed(db: Session, job_id: str, workspace_id: int, reason: str) -> None:
+def _mark_job_failed(db: Session, job_id: str, workspace_id: int, reason: str, code: LogCode | None = None) -> None:
     """Update job to failed and commit."""
     from app.models import Job
 
     r = db.execute(select(Job).where(Job.job_id == job_id, Job.workspace_id == workspace_id))
     job = r.scalars().one_or_none()
     if job:
-        _append_log(db, job, f"Error detectado: {reason}", level="error", visibility="public")
+        _append_log(db, job, code or LogCode.JOB_FAILED, {"reason": reason}, level="error", visibility="public")
         job.status = "failed"
         job.error = reason[:500]
         db.commit()
@@ -91,26 +100,32 @@ def run_verify_lead(self, lead_id: int, workspace_id: int, job_id: str):
         _append_log(
             db,
             job,
-            f"Job started — type: verify, lead_id: {lead_id}, workspace_id: {workspace_id}",
+            LogCode.JOB_STARTED,
+            {"job_type": "verify", "lead_id": lead_id, "workspace_id": workspace_id},
             visibility="public",
         )
-        _append_log(db, job, "Starting verification...", visibility="public")
+        _append_log(db, job, LogCode.JOB_STARTING_VERIFICATION, visibility="public")
         _append_log(
             db,
             job,
-            f"[DEBUG] Worker procesando job_id={job_id}, lead_id={lead_id}, workspace_id={workspace_id}",
+            LogCode.DEBUG_WORKER_PROCESSING,
+            {"job_id": job_id, "lead_id": lead_id, "workspace_id": workspace_id},
             visibility="superadmin",
         )
         db.commit()
 
         r = db.execute(select(Lead).where(Lead.id == lead_id, Lead.workspace_id == workspace_id))
         lead = r.scalars().one_or_none()
-        if not lead or lead.opt_out:
-            _append_log(
-                db, job, "Error: Lead not found or opted out.", level="error", visibility="public"
-            )
+        if not lead:
+            _append_log(db, job, LogCode.ERROR_LEAD_NOT_FOUND, {"lead_id": lead_id}, level="error", visibility="public")
             job.status = "failed"
-            job.error = "Lead not found or opted out"
+            job.error = "Lead not found"
+            db.commit()
+            return
+        if lead.opt_out:
+            _append_log(db, job, LogCode.ERROR_LEAD_OPTED_OUT, {"lead_id": lead_id}, level="error", visibility="public")
+            job.status = "failed"
+            job.error = "Lead opted out"
             db.commit()
             return
 
@@ -118,35 +133,47 @@ def run_verify_lead(self, lead_id: int, workspace_id: int, job_id: str):
         _append_log(
             db,
             job,
-            f"[DEBUG] Lead cargado: id={lead.id}, domain={domain!r}, first={first!r}, last={last!r}",
+            LogCode.DEBUG_LEAD_LOADED,
+            {"lead_id": lead.id, "domain": domain, "first": first, "last": last},
             visibility="superadmin",
         )
         db.commit()
-        _append_log(db, job, "Verifying domain...", visibility="public")
+        _append_log(db, job, LogCode.VERIFY_DOMAIN, {"domain": domain}, visibility="public")
         db.commit()
-        _append_log(db, job, "Generating email candidates...", visibility="public")
+        _append_log(db, job, LogCode.VERIFY_GENERATING_CANDIDATES, visibility="public")
         db.commit()
-        _append_log(db, job, "Checking mail server (MX/SMTP)...", visibility="public")
+        _append_log(db, job, LogCode.VERIFY_CHECKING_MAIL_SERVER, visibility="public")
         cfg = get_workspace_config_sync(db, workspace_id)
         _append_log(
             db,
             job,
-            f"[DEBUG] Llamando verify_and_pick_best(first={first!r}, last={last!r}, domain={domain!r}) con config workspace...",
+            LogCode.DEBUG_CALLING_VERIFIER,
+            {"first": first, "last": last, "domain": domain},
             visibility="superadmin",
         )
         db.commit()
 
         def _progress_cb(msg: str | None, candidate_email: str | None = None, smtp_response: str | None = None) -> None:
+            # Note: msg from verifier is raw text, kept for backward compatibility
             if msg:
-                _append_log(db, job, msg, visibility="public")
+                # Raw text messages from verifier (not translated)
+                from app.models import JobLogLine
+                raw_msg = msg
+                job.log_lines = (job.log_lines or []) + [raw_msg]
+                seq = len(job.log_lines) - 1
+                db.add(JobLogLine(job_id=job.id, seq=seq, message=raw_msg, level="info", visibility="public"))
             if candidate_email:
-                _append_log(db, job, f"  Candidato: {candidate_email}", visibility="superadmin")
+                _append_log(db, job, LogCode.DEBUG_CANDIDATE_STATUS, {"email": candidate_email}, visibility="superadmin")
             if smtp_response:
-                _append_log(db, job, f"  SMTP: {smtp_response}", visibility="superadmin")
+                _append_log(db, job, LogCode.DEBUG_CANDIDATE_STATUS, {"email": "", "response": smtp_response}, visibility="superadmin")
             db.commit()
 
         def _detail_cb(detail_msg: str) -> None:
-            _append_log(db, job, detail_msg, visibility="superadmin")
+            # Raw detail messages (superadmin only, not translated)
+            from app.models import JobLogLine
+            job.log_lines = (job.log_lines or []) + [detail_msg]
+            seq = len(job.log_lines) - 1
+            db.add(JobLogLine(job_id=job.id, seq=seq, message=detail_msg, level="debug", visibility="superadmin"))
             db.commit()
 
         def _on_web_search(provider: str) -> None:
@@ -157,7 +184,7 @@ def run_verify_lead(self, lead_id: int, workspace_id: int, job_id: str):
                 try:
                     increment_serper_usage_sync(db, workspace_id)
                 except Exception as e:
-                    _append_log(db, job, f"[DEBUG] Error tracking Serper usage: {e}", visibility="superadmin")
+                    _append_log(db, job, LogCode.DEBUG_MX_EXCEPTION, {"error": str(e)}, visibility="superadmin")
                     db.commit()
 
         try:
@@ -182,12 +209,13 @@ def run_verify_lead(self, lead_id: int, workspace_id: int, job_id: str):
                 db,
                 job_id,
                 workspace_id,
-                "Execution time exceeded (timeout). Verification took longer than allowed.",
+                "Execution time exceeded (timeout)",
+                code=LogCode.JOB_TIMEOUT,
             )
             return
         except Exception as e:
             err_msg = str(e)[:500]
-            _append_log(db, job, f"Error: {err_msg}", level="error", visibility="public")
+            _append_log(db, job, LogCode.ERROR_GENERIC, {"error": err_msg}, level="error", visibility="public")
             job.status = "failed"
             job.error = err_msg
             db.commit()
@@ -196,7 +224,8 @@ def run_verify_lead(self, lead_id: int, workspace_id: int, job_id: str):
         _append_log(
             db,
             job,
-            f"[DEBUG] verify_and_pick_best retornó: {len(candidates)} candidatos, best_email={best_email!r}",
+            LogCode.DEBUG_VERIFIER_RESULT,
+            {"candidate_count": len(candidates), "best_email": best_email or ""},
             visibility="superadmin",
         )
         db.commit()
@@ -207,23 +236,24 @@ def run_verify_lead(self, lead_id: int, workspace_id: int, job_id: str):
 
             mx_hosts = [h for _, h in mx_lookup(domain, dns_timeout_seconds=cfg.get("dns_timeout_seconds"))]
         except Exception as ex:
-            _append_log(db, job, f"[DEBUG] mx_lookup excepción: {type(ex).__name__}: {ex}", visibility="superadmin")
+            _append_log(db, job, LogCode.DEBUG_MX_EXCEPTION, {"error": f"{type(ex).__name__}: {ex}"}, visibility="superadmin")
         else:
-            _append_log(db, job, f"[DEBUG] mx_lookup: {len(mx_hosts)} hosts", visibility="superadmin")
+            _append_log(db, job, LogCode.DEBUG_MX_LOOKUP, {"host_count": len(mx_hosts)}, visibility="superadmin")
         db.commit()
 
         # Log MX/SMTP: public summary; per-candidate detail superadmin only (sensitive emails/statuses)
-        _append_log(
-            db, job, "MX records: " + (", ".join(mx_hosts) if mx_hosts else "(not found)"), visibility="public"
-        )
+        if mx_hosts:
+            _append_log(db, job, LogCode.VERIFY_MX_RECORDS, {"hosts": ", ".join(mx_hosts)}, visibility="public")
+        else:
+            _append_log(db, job, LogCode.VERIFY_MX_NOT_FOUND, visibility="public")
         db.commit()
         for i, (email, info) in enumerate(probe_results.items()):
             if i >= 15:
-                _append_log(db, job, f"  ... and {len(probe_results) - 15} more candidates", visibility="superadmin")
+                _append_log(db, job, LogCode.DEBUG_MORE_CANDIDATES, {"count": len(probe_results) - 15}, visibility="superadmin")
                 break
             status = info.get("status", "?")
             detail = (info.get("detail") or "")[:100]
-            _append_log(db, job, f"  {email}: {status} — {detail}", visibility="superadmin")
+            _append_log(db, job, LogCode.DEBUG_CANDIDATE_STATUS, {"email": email, "status": status, "detail": detail}, visibility="superadmin")
         db.commit()
 
         log = VerificationLog(
@@ -248,9 +278,11 @@ def run_verify_lead(self, lead_id: int, workspace_id: int, job_id: str):
         lead.web_mentioned = getattr(best_result, "web_mentioned", False) if best_result else False
         lead.updated_at = datetime.now(UTC)
 
-        _append_log(
-            db, job, f"Verification completed. Best email: {lead.email_best or '(none)'}", visibility="public"
-        )
+        if lead.email_best:
+            _append_log(db, job, LogCode.VERIFY_COMPLETED, {"email": lead.email_best}, visibility="public")
+        else:
+            _append_log(db, job, LogCode.VERIFY_NO_EMAIL_FOUND, visibility="public")
+        _append_log(db, job, LogCode.JOB_COMPLETED, {"lead_id": lead_id}, visibility="public")
         job.status = "succeeded"
         job.progress = 100
         job.result = {

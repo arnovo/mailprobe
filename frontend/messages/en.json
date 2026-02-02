@@ -167,5 +167,22 @@
     "JOB_NOT_FOUND": "Job not found",
     "QUOTA_EXCEEDED": "Quota exceeded",
     "INTERNAL_ERROR": "Internal server error"
+  },
+  "logs": {
+    "JOB_STARTED": "Job started — type: {job_type}, lead_id: {lead_id}",
+    "JOB_STARTING_VERIFICATION": "Starting verification...",
+    "JOB_COMPLETED": "Job completed for lead {lead_id}",
+    "JOB_FAILED": "Job failed: {reason}",
+    "JOB_TIMEOUT": "Execution time exceeded (timeout)",
+    "VERIFY_DOMAIN": "Verifying domain {domain}...",
+    "VERIFY_GENERATING_CANDIDATES": "Generating email candidates...",
+    "VERIFY_CHECKING_MAIL_SERVER": "Checking mail server (MX/SMTP)...",
+    "VERIFY_MX_RECORDS": "MX records: {hosts}",
+    "VERIFY_MX_NOT_FOUND": "MX records not found",
+    "VERIFY_COMPLETED": "Verification completed. Best email: {email}",
+    "VERIFY_NO_EMAIL_FOUND": "Verification completed. No valid email found",
+    "ERROR_LEAD_NOT_FOUND": "Error: Lead {lead_id} not found",
+    "ERROR_LEAD_OPTED_OUT": "Error: Lead {lead_id} has opted out",
+    "ERROR_GENERIC": "Error: {error}"
   }
 }

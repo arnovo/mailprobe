@@ -167,5 +167,22 @@
     "JOB_NOT_FOUND": "Trabajo no encontrado",
     "QUOTA_EXCEEDED": "Cuota excedida",
     "INTERNAL_ERROR": "Error interno del servidor"
+  },
+  "logs": {
+    "JOB_STARTED": "Trabajo iniciado — tipo: {job_type}, lead_id: {lead_id}",
+    "JOB_STARTING_VERIFICATION": "Iniciando verificación...",
+    "JOB_COMPLETED": "Trabajo completado para lead {lead_id}",
+    "JOB_FAILED": "Trabajo fallido: {reason}",
+    "JOB_TIMEOUT": "Tiempo de ejecución excedido (timeout)",
+    "VERIFY_DOMAIN": "Verificando dominio {domain}...",
+    "VERIFY_GENERATING_CANDIDATES": "Generando candidatos de email...",
+    "VERIFY_CHECKING_MAIL_SERVER": "Comprobando servidor de correo (MX/SMTP)...",
+    "VERIFY_MX_RECORDS": "Registros MX: {hosts}",
+    "VERIFY_MX_NOT_FOUND": "Registros MX no encontrados",
+    "VERIFY_COMPLETED": "Verificación completada. Mejor email: {email}",
+    "VERIFY_NO_EMAIL_FOUND": "Verificación completada. No se encontró email válido",
+    "ERROR_LEAD_NOT_FOUND": "Error: Lead {lead_id} no encontrado",
+    "ERROR_LEAD_OPTED_OUT": "Error: Lead {lead_id} ha solicitado exclusión",
+    "ERROR_GENERIC": "Error: {error}"
   }
 }
