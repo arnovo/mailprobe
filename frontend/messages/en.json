@@ -1,0 +1,171 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "confirm": "Confirm",
+    "search": "Search",
+    "filter": "Filter",
+    "export": "Export",
+    "import": "Import",
+    "actions": "Actions",
+    "status": "Status",
+    "date": "Date",
+    "name": "Name",
+    "email": "Email",
+    "yes": "Yes",
+    "no": "No",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous"
+  },
+  "auth": {
+    "login": "Log in",
+    "logout": "Log out",
+    "register": "Register",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "forgotPassword": "Forgot your password?",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "invalidCredentials": "Invalid email or password"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "leads": "Leads",
+    "jobs": "Jobs",
+    "config": "Settings",
+    "apiKeys": "API Keys",
+    "webhooks": "Webhooks",
+    "exports": "Exports",
+    "usage": "Usage"
+  },
+  "leads": {
+    "title": "Leads",
+    "addLead": "Add lead",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "company": "Company",
+    "domain": "Domain",
+    "title_field": "Title",
+    "linkedinUrl": "LinkedIn URL",
+    "source": "Source",
+    "verify": "Verify",
+    "verifying": "Verifying...",
+    "verified": "Verified",
+    "noLeads": "No leads",
+    "emailBest": "Best email",
+    "verificationStatus": "Verification status",
+    "confidenceScore": "Confidence score",
+    "alerts": "Alerts",
+    "viewLog": "View log"
+  },
+  "verification": {
+    "status": {
+      "pending": "Pending",
+      "valid": "Valid",
+      "invalid": "Invalid",
+      "risky": "Risky",
+      "unknown": "Unknown"
+    },
+    "signals": {
+      "mx": "MX found",
+      "spf": "SPF configured",
+      "dmarc": "DMARC configured",
+      "smtp": "SMTP verified",
+      "smtpBlocked": "SMTP blocked",
+      "catchAll": "Catch-all",
+      "web": "Found on web",
+      "provider": "Provider: {provider}"
+    },
+    "smtpBlockedMessage": "SMTP blocked in this environment",
+    "noSmtpNote": "Without SMTP: estimate based on DNS/web/pattern"
+  },
+  "jobs": {
+    "title": "Jobs",
+    "status": {
+      "queued": "Queued",
+      "running": "Running",
+      "succeeded": "Succeeded",
+      "failed": "Failed"
+    },
+    "type": "Type",
+    "createdAt": "Created",
+    "completedAt": "Completed",
+    "result": "Result",
+    "error": "Error",
+    "noJobs": "No jobs"
+  },
+  "config": {
+    "title": "Settings",
+    "patterns": "Email patterns",
+    "customPatterns": "Custom patterns",
+    "addPattern": "Add pattern",
+    "removePattern": "Remove pattern",
+    "webSearch": "Web search",
+    "webSearchProvider": "Provider",
+    "webSearchApiKey": "API Key",
+    "timeouts": "Timeouts",
+    "smtpTimeout": "SMTP timeout (seconds)",
+    "saved": "Settings saved",
+    "saveError": "Error saving settings"
+  },
+  "apiKeys": {
+    "title": "API Keys",
+    "create": "Create API Key",
+    "name": "Name",
+    "key": "Key",
+    "scopes": "Scopes",
+    "createdAt": "Created",
+    "expiresAt": "Expires",
+    "revoke": "Revoke",
+    "copyKey": "Copy key",
+    "keyCopied": "Key copied",
+    "noKeys": "No API Keys"
+  },
+  "webhooks": {
+    "title": "Webhooks",
+    "create": "Create webhook",
+    "url": "URL",
+    "events": "Events",
+    "active": "Active",
+    "test": "Test",
+    "delete": "Delete",
+    "noWebhooks": "No webhooks"
+  },
+  "exports": {
+    "title": "Exports",
+    "createCsv": "Export CSV",
+    "download": "Download",
+    "noExports": "No exports"
+  },
+  "usage": {
+    "title": "Usage",
+    "verificationsUsed": "Verifications used",
+    "verificationsLimit": "Verification limit",
+    "apiKeysUsed": "API Keys used",
+    "apiKeysLimit": "API Keys limit",
+    "currentPlan": "Current plan",
+    "resetDate": "Next reset"
+  },
+  "errors": {
+    "AUTH_INVALID_CREDENTIALS": "Invalid email or password",
+    "AUTH_INVALID_TOKEN": "Invalid or expired token",
+    "AUTH_TOKEN_EXPIRED": "Session expired, please log in again",
+    "AUTH_EMAIL_EXISTS": "Email already registered",
+    "AUTH_UNAUTHORIZED": "Unauthorized",
+    "VALIDATION_ERROR": "Validation error",
+    "VALIDATION_REQUIRED_FIELD": "Required field: {field}",
+    "VALIDATION_INVALID_FORMAT": "Invalid format: {field}",
+    "RESOURCE_NOT_FOUND": "Resource not found",
+    "LEAD_NOT_FOUND": "Lead not found",
+    "JOB_NOT_FOUND": "Job not found",
+    "QUOTA_EXCEEDED": "Quota exceeded",
+    "INTERNAL_ERROR": "Internal server error"
+  }
+}

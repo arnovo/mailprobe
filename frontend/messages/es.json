@@ -1,0 +1,171 @@
+{
+  "common": {
+    "loading": "Cargando...",
+    "error": "Error",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "close": "Cerrar",
+    "confirm": "Confirmar",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "export": "Exportar",
+    "import": "Importar",
+    "actions": "Acciones",
+    "status": "Estado",
+    "date": "Fecha",
+    "name": "Nombre",
+    "email": "Email",
+    "yes": "Sí",
+    "no": "No",
+    "back": "Volver",
+    "next": "Siguiente",
+    "previous": "Anterior"
+  },
+  "auth": {
+    "login": "Iniciar sesión",
+    "logout": "Cerrar sesión",
+    "register": "Registrarse",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "confirmPassword": "Confirmar contraseña",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "noAccount": "¿No tienes cuenta?",
+    "hasAccount": "¿Ya tienes cuenta?",
+    "invalidCredentials": "Email o contraseña inválidos"
+  },
+  "nav": {
+    "dashboard": "Panel",
+    "leads": "Leads",
+    "jobs": "Trabajos",
+    "config": "Configuración",
+    "apiKeys": "API Keys",
+    "webhooks": "Webhooks",
+    "exports": "Exportaciones",
+    "usage": "Uso"
+  },
+  "leads": {
+    "title": "Leads",
+    "addLead": "Añadir lead",
+    "firstName": "Nombre",
+    "lastName": "Apellido",
+    "company": "Empresa",
+    "domain": "Dominio",
+    "title_field": "Cargo",
+    "linkedinUrl": "URL de LinkedIn",
+    "source": "Origen",
+    "verify": "Verificar",
+    "verifying": "Verificando...",
+    "verified": "Verificado",
+    "noLeads": "No hay leads",
+    "emailBest": "Mejor email",
+    "verificationStatus": "Estado de verificación",
+    "confidenceScore": "Puntuación de confianza",
+    "alerts": "Alertas",
+    "viewLog": "Ver log"
+  },
+  "verification": {
+    "status": {
+      "pending": "Pendiente",
+      "valid": "Válido",
+      "invalid": "Inválido",
+      "risky": "Arriesgado",
+      "unknown": "Desconocido"
+    },
+    "signals": {
+      "mx": "MX encontrado",
+      "spf": "SPF configurado",
+      "dmarc": "DMARC configurado",
+      "smtp": "SMTP verificado",
+      "smtpBlocked": "SMTP bloqueado",
+      "catchAll": "Catch-all",
+      "web": "Encontrado en web",
+      "provider": "Proveedor: {provider}"
+    },
+    "smtpBlockedMessage": "SMTP bloqueado en este entorno",
+    "noSmtpNote": "Sin SMTP: estimación basada en DNS/web/patrón"
+  },
+  "jobs": {
+    "title": "Trabajos",
+    "status": {
+      "queued": "En cola",
+      "running": "Ejecutando",
+      "succeeded": "Completado",
+      "failed": "Fallido"
+    },
+    "type": "Tipo",
+    "createdAt": "Creado",
+    "completedAt": "Completado",
+    "result": "Resultado",
+    "error": "Error",
+    "noJobs": "No hay trabajos"
+  },
+  "config": {
+    "title": "Configuración",
+    "patterns": "Patrones de email",
+    "customPatterns": "Patrones personalizados",
+    "addPattern": "Añadir patrón",
+    "removePattern": "Eliminar patrón",
+    "webSearch": "Búsqueda web",
+    "webSearchProvider": "Proveedor",
+    "webSearchApiKey": "API Key",
+    "timeouts": "Timeouts",
+    "smtpTimeout": "Timeout SMTP (segundos)",
+    "saved": "Configuración guardada",
+    "saveError": "Error al guardar"
+  },
+  "apiKeys": {
+    "title": "API Keys",
+    "create": "Crear API Key",
+    "name": "Nombre",
+    "key": "Clave",
+    "scopes": "Permisos",
+    "createdAt": "Creada",
+    "expiresAt": "Expira",
+    "revoke": "Revocar",
+    "copyKey": "Copiar clave",
+    "keyCopied": "Clave copiada",
+    "noKeys": "No hay API Keys"
+  },
+  "webhooks": {
+    "title": "Webhooks",
+    "create": "Crear webhook",
+    "url": "URL",
+    "events": "Eventos",
+    "active": "Activo",
+    "test": "Probar",
+    "delete": "Eliminar",
+    "noWebhooks": "No hay webhooks"
+  },
+  "exports": {
+    "title": "Exportaciones",
+    "createCsv": "Exportar CSV",
+    "download": "Descargar",
+    "noExports": "No hay exportaciones"
+  },
+  "usage": {
+    "title": "Uso",
+    "verificationsUsed": "Verificaciones usadas",
+    "verificationsLimit": "Límite de verificaciones",
+    "apiKeysUsed": "API Keys usadas",
+    "apiKeysLimit": "Límite de API Keys",
+    "currentPlan": "Plan actual",
+    "resetDate": "Próximo reinicio"
+  },
+  "errors": {
+    "AUTH_INVALID_CREDENTIALS": "Email o contraseña inválidos",
+    "AUTH_INVALID_TOKEN": "Token inválido o expirado",
+    "AUTH_TOKEN_EXPIRED": "Sesión expirada, inicia sesión de nuevo",
+    "AUTH_EMAIL_EXISTS": "El email ya está registrado",
+    "AUTH_UNAUTHORIZED": "No autorizado",
+    "VALIDATION_ERROR": "Error de validación",
+    "VALIDATION_REQUIRED_FIELD": "Campo requerido: {field}",
+    "VALIDATION_INVALID_FORMAT": "Formato inválido: {field}",
+    "RESOURCE_NOT_FOUND": "Recurso no encontrado",
+    "LEAD_NOT_FOUND": "Lead no encontrado",
+    "JOB_NOT_FOUND": "Trabajo no encontrado",
+    "QUOTA_EXCEEDED": "Cuota excedida",
+    "INTERNAL_ERROR": "Error interno del servidor"
+  }
+}
