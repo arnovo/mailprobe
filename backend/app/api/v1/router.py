@@ -1,7 +1,8 @@
 """API v1 router aggregation."""
+
 from fastapi import APIRouter
 
-from app.api.v1 import api_keys, auth, config, exports, jobs, leads, optout, usage, verify, webhooks, workspaces
+from app.api.v1 import api_keys, auth, config, exports, i18n, jobs, leads, optout, usage, verify, webhooks, workspaces
 
 api_router = APIRouter()
 
@@ -17,3 +18,4 @@ api_router.include_router(exports.router, prefix="/exports", tags=["exports"])
 api_router.include_router(webhooks.router, prefix="/webhooks", tags=["webhooks"])
 api_router.include_router(usage.router, prefix="/usage", tags=["usage"])
 api_router.include_router(api_keys.router, prefix="/api-keys", tags=["api-keys"])
+api_router.include_router(i18n.router, prefix="/i18n", tags=["i18n"])
